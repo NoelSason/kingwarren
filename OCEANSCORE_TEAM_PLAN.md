@@ -51,56 +51,68 @@ Recommended framing:
 
 ## 2. Team Split
 
-### Aarav
+### Aarav/Sean
+
+Primary responsibility:
+
+- ML pipeline design
+- product classification logic
+- score-model rules and confidence thresholds
+- scanned item to Ocean Score mapping
+- backend scoring integration
+- receipt and item scan screens
+- OCR pipeline
+- receipt text cleaning
+- scan API endpoints
+- item and receipt scanning robustness
+- sample scan datasets and preprocessing
+
+
+Should mostly own:
+
+- `backend/classification/`
+- `backend/scoring/`
+- ML evaluation logic and model/output schemas
+
+### Noel/Warren
 
 Primary responsibility:
 
 - app skeleton
 - navigation
 - camera/upload UI
-- receipt and item scan flow
-- points and rewards UI
+- frontend integration layer for scan and score results
+- results and rewards UI
+- alternative recommendations UX
+- shared UI components
+- product copy, user stories, and presentation language
 
 Should mostly own:
 
-- `frontend/`
-- shared UI components
-- screens/pages
+- `frontend/src/screens/Home.tsx`
+- `frontend/src/screens/ReceiptScan.tsx`
+- `frontend/src/screens/ItemScan.tsx`
+- `frontend/src/lib/`
 
-### Noel
 
-Primary responsibility:
 
-- OCR pipeline
-- receipt text cleaning
-- abbreviation handling
-- product classification
-- API endpoints for scan results
+
+Should mostly own:
+
+- `frontend/src/screens/Results.tsx`
+- `frontend/src/screens/Rewards.tsx`
+- `frontend/src/components/`
+- `docs/product/`
+
+
+
 
 Should mostly own:
 
 - `backend/ocr/`
-- `backend/classification/`
-- `backend/api/scan`
-
-### Warren
-
-Primary responsibility:
-
-- feature brainstorming
-- product logic
-- score rules
-- reward ideas
-- alternative recommendations logic
-- guardrails for recycling photo feature
-- user stories and presentation language
-
-Should mostly own:
-
-- `docs/`
-- `data/score_rules/`
-- `prompts/`
-- product spec files and feature prioritization docs
+- `backend/api/scan_*`
+- `data/sample_receipts/`
+- `data/sample_items/`
 
 ### Shared responsibilities
 
@@ -110,6 +122,11 @@ Everyone should help with:
 - demo preparation
 - README
 - bug fixes on their own area
+
+Primary pairing split:
+
+- Noel and Warren own the app skeleton and frontend experience
+- Aarav and Sean own ML, OCR, scanning, and scan-to-score backend flow
 
 Only one person at a time should touch:
 
@@ -149,10 +166,11 @@ scripts/
 
 ### Ownership by folder
 
-- Aarav owns `frontend/`
-- Noel owns `backend/ocr/`, `backend/classification/`, and scan APIs
-- Warren owns `docs/` and `data/score_rules/`
-- Shared logic for final integration can live in `backend/scoring/`, but one person should be designated as the editor for each file
+- Noel owns the frontend app shell in `frontend/src/screens/` for home and scan entry flows plus `frontend/src/lib/`
+- Warren owns `frontend/src/components/`, the results/rewards flows, and `docs/product/`
+- Sean owns `backend/ocr/`, `backend/api/scan_*`, and sample scan data
+- Aarav owns `backend/classification/`, `backend/scoring/`, and ML/scoring evaluation logic
+- Shared logic for final integration can live across `frontend/` and `backend/`, but one person should be designated as the editor for each file
 
 ## 4. Branch Strategy
 
@@ -162,13 +180,15 @@ You should not all work on `main`.
 
 Use short, consistent branch names:
 
-- `aarav/app-skeleton`
-- `noel/ocr-classifier`
-- `warren/feature-spec`
+- `noel/app-skeleton`
+- `warren/results-rewards-ui`
+- `aarav/ml-scoring`
+- `sean/scan-pipeline`
 - later integration branches:
-  - `noel/scoring-api`
-  - `aarav/scan-ui-integration`
-  - `warren/rewards-logic-docs`
+  - `noel/frontend-integration`
+  - `warren/demo-ui-polish`
+  - `aarav/classifier-scoring`
+  - `sean/ocr-api-hardening`
 
 ### One-time setup for everyone
 
@@ -181,20 +201,12 @@ git pull origin main
 
 ### Create a branch
 
-Example for Aarav:
-
-```bash
-git checkout main
-git pull origin main
-git checkout -b aarav/app-skeleton
-```
-
 Example for Noel:
 
 ```bash
 git checkout main
 git pull origin main
-git checkout -b noel/ocr-classifier
+git checkout -b noel/app-skeleton
 ```
 
 Example for Warren:
@@ -202,7 +214,23 @@ Example for Warren:
 ```bash
 git checkout main
 git pull origin main
-git checkout -b warren/feature-spec
+git checkout -b warren/results-rewards-ui
+```
+
+Example for Aarav:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b aarav/ml-scoring
+```
+
+Example for Sean:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b sean/scan-pipeline
 ```
 
 ### Push your branch to GitHub
@@ -216,7 +244,7 @@ git push -u origin <branch-name>
 Example:
 
 ```bash
-git push -u origin noel/ocr-classifier
+git push -u origin sean/scan-pipeline
 ```
 
 ## 5. Beginner-Safe Git Workflow
@@ -242,9 +270,9 @@ git push
 
 ### Good commit message examples
 
-- `create frontend scan flow skeleton`
+- `create frontend app skeleton`
 - `add receipt OCR preprocessing pipeline`
-- `write scoring rules draft and feature spec`
+- `implement classifier to score mapping`
 - `connect receipt upload screen to scan API`
 
 ### Avoid these commit messages
@@ -276,9 +304,9 @@ Do not casually edit these unless your team agrees first:
 
 When it is time to wire frontend to backend:
 
-- Aarav edits frontend integration files
-- Noel exposes stable backend endpoints
-- Warren updates docs/spec only
+- Noel or Warren edits frontend integration files, but only one of them should own a given file at a time
+- Sean exposes stable scan endpoints
+- Aarav updates classification and scoring contracts
 
 ### Rule 4: Merge small changes often
 
@@ -346,22 +374,23 @@ Deliverables:
 
 Goal:
 
-- Aarav builds UI skeleton
-- Noel builds OCR + product classification
-- Warren defines score rules and features
+- Noel and Warren build the app skeleton
+- Sean builds OCR + scanning APIs
+- Aarav builds ML classification + scoring logic
 
 Deliverables:
 
 - navigable app shell
 - a working OCR prototype on sample receipts
-- draft scoring rules and reward logic
+- a classifier/scoring prototype on sample items
 
 ### Phase 3: Scoring integration
 
 Goal:
 
-- connect classification output to Ocean Score engine
+- connect Sean's scan output to Aarav's Ocean Score engine
 - connect score engine to CalCOFI-based ocean multiplier
+- wire Noel and Warren's UI to the real backend response
 
 Deliverables:
 
@@ -442,7 +471,7 @@ Those can be described as future work if needed.
 
 ## 10. API Contract Recommendation
 
-Define this early so Aarav and Noel can work separately.
+Define this early so Noel and Warren can build the app shell while Aarav and Sean build ML and scanning in parallel.
 
 ### Endpoint 1: receipt scan
 
@@ -529,56 +558,111 @@ This contract lets frontend and backend move independently.
 
 ### Goal
 
-Build a clickable app skeleton that can later connect to Noel's APIs.
+Build the ML classification and scoring layer that turns scanned items into categories, confidence, and Ocean Score outputs.
 
 ### Files Aarav should own
 
-- `frontend/src/screens/Home.tsx`
-- `frontend/src/screens/ReceiptScan.tsx`
-- `frontend/src/screens/ItemScan.tsx`
-- `frontend/src/screens/Results.tsx`
-- `frontend/src/screens/Rewards.tsx`
-- `frontend/src/components/*`
+- `backend/classification/*`
+- `backend/scoring/*`
+- model/output schema docs
+- evaluation scripts or notebooks used for classification/scoring checks
 
 ### Aarav tasks
 
-1. Pick frontend stack.
-   Recommended: `React` or `Next.js` if you want web, `Expo React Native` if you want mobile.
-2. Build the basic navigation.
-3. Build upload/camera UI for item scan and receipt scan.
-4. Build fake results screen using mocked JSON.
-5. Build points/rewards UI.
-6. Add a `What if I swapped this?` section on the results page.
-7. When Noel's API is ready, replace the mock JSON with real API calls.
+1. Decide the first-pass classification approach.
+   Recommended:
+   - category mapping rules first
+   - lightweight ML model only if it clearly improves demo quality
+2. Define the category list and confidence rules used by the scoring pipeline.
+3. Build category classifier outputs for common grocery items.
+4. Implement the item-level scoring logic and total score rollup.
+5. Add points mapping and swap suggestion output shape.
+6. Connect the scoring pipeline to CalCOFI-based ocean stress weighting.
+7. Align the response schema with Sean's scan APIs so frontend can consume one stable payload.
 
 ### Aarav should not block on
 
-- real OCR
-- real scoring
-- real dataset integration
+- polished frontend UI
+- final rewards styling
+- advanced auth or account systems
 
-Use mock data first.
+Use sample scanned items first.
 
 ## Noel Plan
 
 ### Goal
 
-Build the OCR and product classification pipeline.
+Build a clickable app skeleton that can later connect to Sean and Aarav's APIs.
 
 ### Files Noel should own
 
-- `backend/ocr/*`
-- `backend/classification/*`
-- `backend/api/scan_receipt.*`
-- `backend/api/scan_item.*`
+- `frontend/src/screens/Home.tsx`
+- `frontend/src/screens/ReceiptScan.tsx`
+- `frontend/src/screens/ItemScan.tsx`
+- `frontend/src/lib/*`
 
 ### Noel tasks
 
-1. Decide OCR approach.
+1. Pick the frontend stack.
+   Recommended: `React` or `Next.js` if you want web, `Expo React Native` if you want mobile.
+2. Build the basic navigation and shell layout.
+3. Build upload/camera UI for item scan and receipt scan.
+4. Add mocked loading, success, and error states for scan flows.
+5. Define a stable frontend data contract for results pages.
+6. When Sean and Aarav's APIs are ready, replace the mock JSON with real API calls.
+7. Keep integration helpers isolated so Warren can build on top of the same app shell cleanly.
+
+### Noel should not block on
+
+- real OCR
+- real scoring
+- final dataset integration
+
+## Warren Plan
+
+### Goal
+
+Own the rest of the app skeleton experience, especially the results, rewards, and demo-facing UI polish.
+
+### Files Warren should own
+
+- `frontend/src/screens/Results.tsx`
+- `frontend/src/screens/Rewards.tsx`
+- `frontend/src/components/*`
+- `docs/product/feature-priority.md`
+- `docs/product/user-stories.md`
+
+### Warren tasks
+
+1. Build the results screen UI around the agreed API response shape.
+2. Build points and rewards screens.
+3. Add the `What if I swapped this?` section and alternative recommendation cards.
+4. Create reusable frontend components for score chips, item cards, and points summaries.
+5. Define the product copy and user-facing wording for the demo.
+6. Prioritize features by `must have`, `nice to have`, and `future`.
+7. Keep demo flow and feature-priority docs current as UI decisions change.
+
+## Sean Plan
+
+### Goal
+
+Build the scanning pipeline and scan APIs that feed Aarav's ML and scoring layer.
+
+### Files Sean should own
+
+- `backend/ocr/*`
+- `backend/api/scan_receipt.*`
+- `backend/api/scan_item.*`
+- `data/sample_receipts/*`
+- `data/sample_items/*`
+
+### Sean tasks
+
+1. Decide the OCR approach.
    Recommended:
    - fastest: an OCR API or library already available
    - fallback: local OCR pipeline
-2. Create sample receipt test cases in `data/sample_receipts/`.
+2. Create sample receipt and item-scan test cases.
 3. Build text cleanup functions:
    - uppercase/lowercase normalization
    - merchant noise removal
@@ -592,82 +676,16 @@ Examples:
 - `ORG BNNS` -> `organic bananas`
 - `WHL MLK` -> `whole milk`
 
-5. Build category classifier:
-   - beef
-   - dairy
-   - poultry
-   - seafood
-   - vegetables
-   - fruit
-   - legumes
-   - packaged snacks
-   - beverages
-6. Expose a stable API returning parsed items and confidence.
-7. Add a confidence threshold and fallback category:
+5. Expose stable receipt and item scan APIs returning parsed items and confidence.
+6. Add a confidence threshold and fallback category:
    - `unknown`
-8. Document assumptions in a short backend README.
+7. Document scanning assumptions and known failure cases in a short backend README.
 
-### Noel stretch goals
+### Sean stretch goals
 
 - item scan image classification
 - crumpled receipt robustness
 - confidence score UI support
-
-## Warren Plan
-
-### Goal
-
-Define the app logic, rules, feature priorities, and guardrails so the team does not guess.
-
-### Files Warren should own
-
-- `docs/product/feature-priority.md`
-- `docs/product/user-stories.md`
-- `docs/product/reward-system.md`
-- `data/score_rules/item-impact-rules.json`
-- `docs/research/recycling-guardrails.md`
-
-### Warren tasks
-
-1. Write top 3 user personas.
-
-Examples:
-
-- budget-conscious grocery shopper
-- eco-conscious student
-- family trying to make healthier and cheaper swaps
-
-2. Define score dimensions:
-   - climate impact
-   - runoff impact
-   - plastic impact
-3. Draft category-level scoring priors.
-
-Example:
-
-- beef = high climate, high runoff
-- leafy vegetables = low climate, low runoff
-- heavily packaged snack = moderate climate, high plastic
-
-4. Define reward mechanics:
-   - points per receipt
-   - streaks
-   - double-point events
-   - reward unlock examples
-5. Define `What if` feature behavior:
-   - suggested replacement
-   - extra points gained
-   - pros and cons
-6. Write guardrails for recycling-photo feature.
-
-Examples:
-
-- require photo plus bin-type prompt
-- allow only limited daily submissions
-- no duplicate photo hashes
-- no points without confidence threshold
-
-7. Prioritize features by `must have`, `nice to have`, `future`.
 
 ## 12. Scoring System Recommendation
 
@@ -757,15 +775,17 @@ Avoid wording like:
 
 ### Next 4 hours
 
-- Aarav: UI skeleton with mocked data
-- Noel: OCR pipeline prototype
-- Warren: feature and score rule docs
+- Noel: app shell and scan entry screens
+- Warren: results and rewards UI
+- Sean: OCR pipeline prototype
+- Aarav: classifier and scoring prototype
 
 ### Next 4 hours
 
-- Noel: API returns parsed categories
-- Aarav: connect UI to mocked API shape
-- Warren: finalize reward logic and swap rules
+- Sean: API returns parsed receipt categories
+- Aarav: scoring pipeline returns item scores and points
+- Noel: connect UI to mocked API shape
+- Warren: finalize rewards UX and swap flow copy
 
 ### Next 4 hours
 
@@ -784,21 +804,27 @@ Avoid wording like:
 
 ### Aarav done means
 
-- user can click through all major screens
-- receipt upload flow exists
-- results screen displays real backend response
+- categories or model outputs work on sample scanned items
+- scoring returns item-level scores, total score, and points
+- backend response shape is stable for frontend integration
 
 ### Noel done means
 
-- receipt OCR works on at least 5 to 10 sample receipts
-- common abbreviations normalize correctly
-- item categories return with confidence
+- user can click through home, receipt scan, and item scan screens
+- upload flow exists
+- app shell can render mocked backend responses
 
 ### Warren done means
 
-- score rules exist in writing
-- feature priority is clear
-- rewards and guardrails are defined
+- results and rewards screens are demo-ready
+- swap suggestions and point summaries are easy to understand
+- feature priority and demo copy are clear
+
+### Sean done means
+
+- receipt OCR works on at least 5 to 10 sample receipts
+- common abbreviations normalize correctly
+- scan APIs return parsed items with confidence
 
 ### Team done means
 
@@ -832,7 +858,8 @@ That is enough for a strong MVP.
 ## 18. Final Recommendations
 
 - Build the receipt flow first.
-- Use mocked data on the frontend immediately.
+- Let Noel and Warren use mocked data on the frontend immediately.
+- Have Aarav and Sean lock the scan and score schema early.
 - Keep CalCOFI as the Scripps eligibility anchor.
 - Keep product scoring category-based, not SKU-perfect.
 - Do not overbuild the recycling feature unless the core receipt flow already works.
