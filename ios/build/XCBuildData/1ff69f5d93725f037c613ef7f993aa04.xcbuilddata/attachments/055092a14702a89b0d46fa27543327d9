@@ -1,0 +1,209 @@
+{
+  "" : {
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Clens-primary.dia",
+    "emit-module-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Clens-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Clens-primary-emit-module.dia",
+    "pch" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Clens-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Clens-primary.swiftdeps"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/ClensApp.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ClensApp~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/DesignSystem/Components.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Components~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/DesignSystem/LineIcons.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LineIcons~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/DesignSystem/ScoreDial.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScoreDial~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/DesignSystem/Theme.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Theme~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Models/MockData.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/MockData~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Models/Product.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/Product~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Navigation/AppRouter.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/AppRouter~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Navigation/TabBarView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/TabBarView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/RootView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RootView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/HomeView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/HomeView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/LeaderboardView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/LeaderboardView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/ProfileView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ProfileView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/ReceiptResultView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ReceiptResultView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/RewardsView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/RewardsView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/ScanResultView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanResultView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/ScanView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/ScanView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/SignInView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SignInView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/Clens/Screens/SwapView.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/SwapView~partial.swiftmodule"
+  },
+  "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/noelsason/Desktop/DataHacks/ios/build/Clens.build/Debug-iphonesimulator/Clens.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

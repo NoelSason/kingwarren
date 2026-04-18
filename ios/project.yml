@@ -1,0 +1,62 @@
+name: Clens
+options:
+  bundleIdPrefix: com.clens
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  schemePathPrefix: ""
+schemes:
+  Clens:
+    build:
+      targets:
+        Clens: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+targets:
+  Clens:
+    type: application
+    platform: iOS
+    sources:
+      - path: Clens
+        excludes:
+          - "Info.plist"
+          - "Resources/Assets.xcassets"
+    info:
+      path: Clens/Info.plist
+      properties:
+        CFBundleDisplayName: Clens
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIRequiredDeviceCapabilities:
+          - arm64
+        UIStatusBarStyle: UIStatusBarStyleDefault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clens.app
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: "NO"
+        INFOPLIST_FILE: Clens/Info.plist
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        SUPPORTED_PLATFORMS: "iphonesimulator iphoneos"
+        SUPPORTS_MACCATALYST: "NO"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
