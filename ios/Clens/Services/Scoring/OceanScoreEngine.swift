@@ -79,14 +79,30 @@ enum OceanScoreEngine {
         )
     }
 
-    // Every bar is a "goodness" factor on 0..1 (higher = better, lower = worse),
-    // stress-amplified uniformly so any non-zero raw impact gets punished
-    // harder when the ocean is stressed:
-    //   goodness = max(0, 1 - raw_intensity * stressIndex)
-    // A perfectly-zero-impact item stays 1.0 regardless of stress; stress
-    // only scales the penalty for non-zero impacts.
-    private static func stressed(_ intensity: Double, stress: Double) -> Double {
-        max(0.0, min(1.0, 1.0 - intensity * stress))
+    // Stress clamped to [0.8, 1.2]: prevents a stress spike from pinning every
+    // factor to zero, and stops pristine-ocean moments from letting high-impact
+    // items register as "fine".
+    private static func softenStress(_ stress: Double) -> Double {
+        max(0.8, min(1.2, stress))
+    }
+
+    // Climate + water: most grocery items sit far below the meat/dairy ceiling,
+    // so raw intensity is tiny and goodness pins near 1.0 ("everything green").
+    // Square-rooting intensity before the penalty pulls typical items off the
+    // ceiling — a 2 kg CO2/kg item no longer looks identical to a 0.5 kg one.
+    // Tails still clamp at intensity=1, so beef/lamb stay at 0.
+    private static func compressedGoodness(_ intensity: Double, stress: Double) -> Double {
+        let stretched = sqrt(max(0.0, min(1.0, intensity)))
+        return max(0.0, min(1.0, 1.0 - stretched * stress))
+    }
+
+    // Runoff + plastic: smootherstep S-curve on goodness (6t⁵-15t⁴+10t³).
+    // Derivative peaks at t=0.5 and vanishes at 0 and 1, so items straddling
+    // the median spread apart (more discrimination in middle) while clearly-
+    // good / clearly-bad items stay planted at their edges (tight at edges).
+    private static func sCurvedGoodness(_ intensity: Double, stress: Double) -> Double {
+        let raw = max(0.0, min(1.0, 1.0 - intensity * stress))
+        return raw * raw * raw * (raw * (raw * 6 - 15) + 10)
     }
 
     // Agribalyse EF single-score distribution is heavy-right-tailed: the ~95th
@@ -114,18 +130,22 @@ enum OceanScoreEngine {
         let plasticI = min(f.plastic / CategoryImpacts.worstPlastic, 1.0)
         let waterI   = min(f.water   / CategoryImpacts.worstWater,   1.0)
 
-        let co2     = stressed(co2I,     stress: stressIndex)
-        let runoff  = stressed(runoffI,  stress: stressIndex)
-        let plastic = stressed(plasticI, stress: stressIndex)
-        let water   = stressed(waterI,   stress: stressIndex)
+        let soft = softenStress(stressIndex)
+
+        let co2     = compressedGoodness(co2I,     stress: soft)
+        let water   = compressedGoodness(waterI,   stress: soft)
+        let runoff  = sCurvedGoodness(runoffI,     stress: soft)
+        let plastic = sCurvedGoodness(plasticI,    stress: soft)
 
         let composite = 0.35 * co2 + 0.30 * runoff + 0.20 * plastic + 0.15 * water
         let score = max(0, min(100, Int((100.0 * composite).rounded())))
         return CategoryFactors(co2: co2, runoff: runoff, plastic: plastic, water: water, score: score)
     }
 
-    // Cell 8 agribalyse path with the same uniform stress treatment — plastic
-    // and water now get stress-penalized too, not just runoff.
+    // Cell 8 agribalyse path. Same shape policy as the category branch:
+    // climate/water use the sqrt-compressed curve (tighter overall),
+    // runoff/plastic use the smootherstep S-curve (middle variability, tight
+    // edges). Stress is softened to [0.8, 1.2] before entering either.
     static func agribalyseFactors(
         co2Kg: Double,
         ef: Double,
@@ -140,10 +160,12 @@ enum OceanScoreEngine {
         let plasticI = 1.0 - (plasticScore ?? 0.5)
         let waterI   = 1.0 - (waterScore ?? 0.5)
 
-        let co2     = stressed(co2I,     stress: stressIndex)
-        let runoff  = stressed(efI,      stress: stressIndex)
-        let plastic = stressed(plasticI, stress: stressIndex)
-        let water   = stressed(waterI,   stress: stressIndex)
+        let soft = softenStress(stressIndex)
+
+        let co2     = compressedGoodness(co2I,     stress: soft)
+        let water   = compressedGoodness(waterI,   stress: soft)
+        let runoff  = sCurvedGoodness(efI,         stress: soft)
+        let plastic = sCurvedGoodness(plasticI,    stress: soft)
 
         let composite = 0.30 * co2 + 0.30 * runoff + 0.25 * plastic + 0.15 * water
         let score = max(0, min(100, Int((100.0 * composite).rounded())))
@@ -160,13 +182,13 @@ enum OceanScoreEngine {
                 stressIndex: stressIndex
             )
             score = f.score
-            ScanLog.step(12, "scoring branch=AGRIBALYSE (uniform stress across all 4 factors)")
+            ScanLog.step(12, "scoring branch=AGRIBALYSE (climate/water sqrt-compressed, runoff/plastic S-curved, stress∈[0.8,1.2])")
             ScanLog.step(13, String(format: "  co2=%.2f runoff=%.2f plastic=%.2f water=%.2f stress=%.2f → score=%d",
                                     f.co2, f.runoff, f.plastic, f.water, stressIndex, score))
         } else {
             let f = categoryFactors(for: item.category, stressIndex: stressIndex)
             score = f.score
-            ScanLog.step(12, "scoring branch=CATEGORY-BASELINE (uniform stress across all 4 factors)")
+            ScanLog.step(12, "scoring branch=CATEGORY-BASELINE (climate/water sqrt-compressed, runoff/plastic S-curved, stress∈[0.8,1.2])")
             ScanLog.step(13, String(format: "  co2=%.2f runoff=%.2f plastic=%.2f water=%.2f stress=%.2f → score=%d",
                                     f.co2, f.runoff, f.plastic, f.water, stressIndex, score))
         }
