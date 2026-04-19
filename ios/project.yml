@@ -34,11 +34,15 @@ targets:
   Clens:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Clens/Secrets.xcconfig
+      Release: Clens/Secrets.xcconfig
     sources:
       - path: Clens
         excludes:
           - "Info.plist"
           - "Resources/Assets.xcassets"
+          - "Secrets.xcconfig"
     info:
       path: Clens/Info.plist
       properties:
@@ -54,7 +58,7 @@ targets:
           - arm64
         UIStatusBarStyle: UIStatusBarStyleDefault
         NSCameraUsageDescription: "Clens uses the camera to scan product barcodes, labels, and grocery receipts so it can show your Ocean Score."
-        ANTHROPIC_API_KEY: ""
+        ANTHROPIC_API_KEY: "$(ANTHROPIC_API_KEY)"
         SUPABASE_URL: ""
         SUPABASE_ANON_KEY: ""
     settings:

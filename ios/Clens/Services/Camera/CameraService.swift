@@ -16,8 +16,15 @@ final class CameraService: NSObject, ObservableObject, @unchecked Sendable {
     @MainActor @Published private(set) var torchOn: Bool = false
     @MainActor @Published private(set) var torchSupported: Bool = false
     @MainActor @Published private(set) var unavailable: Bool = false
+    // Timestamp of the most recent barcode sighting, regardless of the
+    // current camera mode. AutoRouteController samples this to detect
+    // "user swung the phone onto a product" even while we're still in
+    // .photo (receipt) mode.
+    @MainActor @Published private(set) var lastBarcodeObservedAt: Date? = nil
 
     let session = AVCaptureSession()
+    // Exposed so ScanView can wire the auto-router as the frame delegate.
+    let frameSampler = FrameSampler()
     private let sessionQueue = DispatchQueue(label: "camera.session", qos: .userInitiated)
 
     private let metadataOutput = AVCaptureMetadataOutput()
@@ -146,12 +153,13 @@ final class CameraService: NSObject, ObservableObject, @unchecked Sendable {
     private func applyMode(_ m: Mode) {
         dispatchPrecondition(condition: .onQueue(sessionQueue))
         session.beginConfiguration()
-        if m == .barcode {
-            let supported = Set(metadataOutput.availableMetadataObjectTypes)
-            metadataOutput.metadataObjectTypes = supportedBarcodeTypes.filter { supported.contains($0) }
-        } else {
-            metadataOutput.metadataObjectTypes = []
-        }
+        // Barcode metadata stays enabled in both camera modes so the
+        // AutoRouteController can notice a product pivot while the camera
+        // is in .photo mode. The delegate callback still gates navigation
+        // on the current mode (see metadataOutput(_:didOutput:from:) below).
+        let supported = Set(metadataOutput.availableMetadataObjectTypes)
+        metadataOutput.metadataObjectTypes = supportedBarcodeTypes.filter { supported.contains($0) }
+        _ = m
         session.commitConfiguration()
     }
 
@@ -193,6 +201,8 @@ final class CameraService: NSObject, ObservableObject, @unchecked Sendable {
         if session.canAddOutput(photoOutput) {
             session.addOutput(photoOutput)
         }
+
+        frameSampler.attach(to: session)
 
         do {
             try device.lockForConfiguration()
@@ -244,9 +254,18 @@ extension CameraService: AVCaptureMetadataOutputObjectsDelegate {
             .compactMap({ $0 as? AVMetadataMachineReadableCodeObject })
             .first,
               let value = readable.stringValue, !value.isEmpty else { return }
+        let symbology = readable.type.rawValue
         Task { @MainActor in
+            // Always update the observation timestamp — the auto-router
+            // uses it to decide "barcode in frame right now" regardless
+            // of the current camera mode.
+            self.lastBarcodeObservedAt = Date()
+            // Only publish the decoded string for navigation when the
+            // user is actually in product mode; otherwise the receipt
+            // flow would get hijacked by an ambient barcode.
             guard self.mode == .barcode else { return }
             if self.lastDetectedBarcode != value {
+                ScanLog.step(1, "camera decoded barcode: '\(value)' symbology=\(symbology)")
                 self.lastDetectedBarcode = value
             }
         }

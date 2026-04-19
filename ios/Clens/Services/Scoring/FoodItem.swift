@@ -17,15 +17,24 @@ struct FoodItem: Codable, Hashable {
     var packagingType: PackagingType
     var keyIngredients: [String]
 
-    // 0-100 penalty scale, higher = worse (matches Python convention)
+    // 0-100 penalty scale, higher = worse (matches Python convention).
+    // Used when Agribalyse data is absent (receipts, unknown products).
     var climateImpact: Int
     var runoffImpact: Int
     var plasticImpact: Int
+
+    // Per-SKU Agribalyse lifecycle signals from OpenFoodFacts ecoscore_data,
+    // used by the Cell 8 score_real() path in project_oceanscore.py. When
+    // present they override the category-baseline scoring.
+    var agribalyseCO2Kg: Double?       // kg CO2-eq per kg product
+    var agribalyseEF: Double?          // environmental footprint, typically 0-1.5
+    var hasPlasticPackaging: Bool?     // detected from packagings[].material
 
     // Optional provenance
     var rawLabelText: String
     var barcode: String?
     var sourceOrigin: String?
+    var imageFrontURL: String?   // used by LLM fallback when agribalyse is missing
 
     static func unknown(name: String = "Unknown product", barcode: String? = nil) -> FoodItem {
         let base = CategoryImpacts.baseline[.unknown]!
@@ -41,9 +50,13 @@ struct FoodItem: Codable, Hashable {
             climateImpact: base.climate,
             runoffImpact: base.runoff,
             plasticImpact: base.plastic,
+            agribalyseCO2Kg: nil,
+            agribalyseEF: nil,
+            hasPlasticPackaging: nil,
             rawLabelText: "",
             barcode: barcode,
-            sourceOrigin: nil
+            sourceOrigin: nil,
+            imageFrontURL: nil
         )
     }
 }
