@@ -38,74 +38,123 @@ final class ScanCoordinator: ObservableObject {
 
     // MARK: - Product flows
 
-    func handleBarcode(_ barcode: String) async {
+    // OFF returned a response but it's useless for scoring — no category, no
+    // brand, no lifecycle data. Worth silently falling back to an image + LLM
+    // identification instead of showing an "Unknown brand" card.
+    private func isUnusableOFFResult(_ item: FoodItem) -> Bool {
+        item.category == .unknown
+            && item.brand.isEmpty
+            && item.agribalyseCO2Kg == nil
+    }
+
+    // Apply an LLM EnvEstimate to a FoodItem, only filling fields that are
+    // currently nil and only where the LLM actually returned a value. Never
+    // overwrites true OFF data, never hardcodes defaults.
+    private func applyEnvEstimate(_ est: LabelScanClient.EnvEstimate, to item: inout FoodItem) {
+        if item.agribalyseCO2Kg == nil, let v = est.co2TotalKg      { item.agribalyseCO2Kg = v }
+        if item.agribalyseEF    == nil, let v = est.efTotal         { item.agribalyseEF    = v }
+        if item.plasticScore    == nil, let v = est.plasticScore    { item.plasticScore    = v }
+        if item.waterScore      == nil, let v = est.waterLitersPerKg {
+            item.waterLitersPerKg = v
+            item.waterScore = 1.0 - min(Double(v) / 15000.0, 1.0)
+        }
+    }
+
+    // Fill any of co2/ef/plastic/water that aren't already populated by
+    // calling the Cell-8 LLM estimator. Safe to call with the LLM not
+    // configured or offline; missing fields simply stay nil.
+    private func fillMissingWithLLM(_ item: inout FoodItem) async {
+        let hasCO2     = item.agribalyseCO2Kg != nil && item.agribalyseEF != nil
+        let hasPlastic = item.plasticScore != nil
+        let hasWater   = item.waterScore != nil
+        let needsLLM   = !(hasCO2 && hasPlastic && hasWater)
+
+        guard needsLLM else {
+            ScanLog.step(11, "OFF returned full co2/ef/plastic/water — no LLM call needed")
+            return
+        }
+        guard LabelScanClient.isConfigured else {
+            ScanLog.step(11, "LLM not configured — leaving missing fields nil; scoring will use category baseline for those dimensions")
+            return
+        }
+        let missing = [hasCO2 ? nil : "co2/ef", hasPlastic ? nil : "plastic", hasWater ? nil : "water"]
+            .compactMap { $0 }.joined(separator: ",")
+        ScanLog.step(11, "LLM needed — missing: \(missing)")
+        status = .busy("Estimating impact…")
+        do {
+            let est = try await LabelScanClient.estimateEnvironmental(
+                productName: item.normalizedName,
+                imageURL: item.imageFrontURL
+            )
+            applyEnvEstimate(est, to: &item)
+            ScanLog.step(11, String(format: "LLM estimate applied: plastic_score=%@ water_L=%@ water_score=%@",
+                                    item.plasticScore.map { String(format: "%.2f", $0) } ?? "nil",
+                                    item.waterLitersPerKg.map { "\($0)" } ?? "nil",
+                                    item.waterScore.map { String(format: "%.2f", $0) } ?? "nil"))
+        } catch {
+            ScanLog.step(11, "LLM estimate FAILED (\(error)) — leaving missing fields nil; scoring will use category baseline for those dimensions")
+        }
+    }
+
+    // Barcode entry point. When OFF has no useful data, the view layer gives
+    // us a closure that grabs a still frame from the camera; we route that
+    // through the same label-scan + env-estimate flow the product-label mode
+    // uses, so the user silently gets an image-identified score instead of
+    // an "Unknown brand" placeholder.
+    func handleBarcode(_ barcode: String, captureFallbackPhoto: (() async throws -> Data)? = nil) async {
         ScanLog.step(2, "coordinator received barcode='\(barcode)', starting OFF lookup (stress=\(String(format: "%.2f", ocean.stressIndex)))")
         status = .busy("Looking up barcode…")
+
+        var item: FoodItem
+        var offResolved = false
         do {
-            var item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
+            item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
             ScanLog.step(10, "FoodItem built: name='\(item.normalizedName)' brand='\(item.brand)' category=\(item.category.rawValue) organic=\(item.isOrganic) packaging=\(item.packagingType.rawValue)")
-
-            // No pre-LLM hardcoding of water or plastic. The only truths are:
-            //   • OFF Agribalyse → co2Kg / ef
-            //   • OFF packagings → plasticScore
-            //   • LLM estimate   → fills whatever OFF left nil (including water,
-            //                      which OFF never provides)
-            // If the LLM is unavailable or the specific field is absent from
-            // its response, the field stays nil and scoring falls through to
-            // the category baseline branch. Nothing is defaulted to 0.5 / 2000
-            // before the LLM has a chance to speak.
-            let hasCO2     = item.agribalyseCO2Kg != nil && item.agribalyseEF != nil
-            let hasPlastic = item.plasticScore != nil
-            let hasWater   = item.waterScore != nil
-            let needsLLM   = !(hasCO2 && hasPlastic && hasWater)
-
-            if needsLLM && LabelScanClient.isConfigured {
-                let missing = [hasCO2 ? nil : "co2/ef", hasPlastic ? nil : "plastic", hasWater ? nil : "water"]
-                    .compactMap { $0 }.joined(separator: ",")
-                ScanLog.step(11, "LLM needed — missing: \(missing)")
-                status = .busy("Estimating impact…")
-                do {
-                    let est = try await LabelScanClient.estimateEnvironmental(
-                        productName: item.normalizedName,
-                        imageURL: item.imageFrontURL
-                    )
-                    // Only fill fields that are currently nil, and only from
-                    // LLM values that are actually present. Never overwrite
-                    // true OFF data, never hardcode a default.
-                    if item.agribalyseCO2Kg == nil, let v = est.co2TotalKg      { item.agribalyseCO2Kg = v }
-                    if item.agribalyseEF    == nil, let v = est.efTotal         { item.agribalyseEF    = v }
-                    if item.plasticScore    == nil, let v = est.plasticScore    { item.plasticScore    = v }
-                    if item.waterScore      == nil, let v = est.waterLitersPerKg {
-                        item.waterLitersPerKg = v
-                        item.waterScore = 1.0 - min(Double(v) / 15000.0, 1.0)
-                    }
-                    ScanLog.step(11, String(format: "LLM estimate applied: plastic_score=%@ water_L=%@ water_score=%@",
-                                            item.plasticScore.map { String(format: "%.2f", $0) } ?? "nil",
-                                            item.waterLitersPerKg.map { "\($0)" } ?? "nil",
-                                            item.waterScore.map { String(format: "%.2f", $0) } ?? "nil"))
-                } catch {
-                    ScanLog.step(11, "LLM estimate FAILED (\(error)) — leaving missing fields nil; scoring will use category baseline for those dimensions")
-                }
-            } else if needsLLM {
-                ScanLog.step(11, "LLM not configured — leaving missing fields nil; scoring will use category baseline for those dimensions")
-            } else {
-                ScanLog.step(11, "OFF returned full co2/ef/plastic/water — no LLM call needed")
+            if isUnusableOFFResult(item) {
+                ScanLog.step(10, "OFF returned skeleton record (unknown category + blank brand + no agribalyse) — treating as miss")
+                throw OpenFoodFactsClient.OFFError.notFound
             }
-            let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
-            ScanLog.step(17, "product ready: id='\(product.id)' score=\(product.score) displayPoints=\(Int(Double(product.score) * 1.6)) facts=\(product.facts.count)")
-            self.liveProduct = product
-            self.status = .idle
-            history?.log(.product(product, points: OceanScoreEngine.tierPoints(for: product.score)))
-            ScanLog.step(18, "liveProduct published → ScanView will navigate to result")
+            offResolved = true
         } catch {
-            ScanLog.step(99, "OFF lookup failed (\(error)) — showing baseline estimate")
-            // Fall back so the demo still progresses — unknown-category item
-            // scored against the stress index gives a sensible-looking card.
+            ScanLog.step(99, "OFF unusable (\(error)) — attempting silent image + LLM fallback")
+            if let capture = captureFallbackPhoto, LabelScanClient.isConfigured {
+                status = .busy("Identifying product…")
+                do {
+                    let jpeg = try await capture()
+                    ScanLog.step(99, "fallback photo captured: JPEG bytes=\(jpeg.count) → LabelScanClient.scan")
+                    var labelItem = try await LabelScanClient.scan(jpegData: jpeg)
+                    // Tag the item with the barcode we originally decoded so
+                    // history / dedupe still work.
+                    labelItem.barcode = barcode
+                    await fillMissingWithLLM(&labelItem)
+                    let product = OceanScoreEngine.uiProduct(from: labelItem, stressIndex: ocean.stressIndex)
+                    ScanLog.step(17, "product ready via barcode→image fallback: id='\(product.id)' score=\(product.score)")
+                    self.liveProduct = product
+                    self.status = .idle
+                    history?.log(.product(product, points: OceanScoreEngine.tierPoints(for: product.score)))
+                    ScanLog.step(18, "liveProduct published via barcode→image fallback → ScanView will navigate")
+                    return
+                } catch {
+                    ScanLog.step(99, "barcode→image fallback FAILED (\(error)) — using baseline estimate")
+                }
+            } else {
+                ScanLog.step(99, "no capture closure or LLM not configured — using baseline estimate")
+            }
             let fallback = FoodItem.unknown(name: "Barcode \(barcode)", barcode: barcode)
             let product = OceanScoreEngine.uiProduct(from: fallback, stressIndex: ocean.stressIndex)
             self.liveProduct = product
-            self.status = .error("Couldn't reach OpenFoodFacts — showing a baseline estimate.")
+            self.status = .error("Couldn't identify this barcode — showing a baseline estimate.")
+            return
         }
+
+        _ = offResolved
+        await fillMissingWithLLM(&item)
+        let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
+        ScanLog.step(17, "product ready: id='\(product.id)' score=\(product.score) displayPoints=\(Int(Double(product.score) * 1.6)) facts=\(product.facts.count)")
+        self.liveProduct = product
+        self.status = .idle
+        history?.log(.product(product, points: OceanScoreEngine.tierPoints(for: product.score)))
+        ScanLog.step(18, "liveProduct published → ScanView will navigate to result")
     }
 
     func handleLabelImage(_ jpeg: Data) async {
@@ -114,8 +163,13 @@ final class ScanCoordinator: ObservableObject {
 
         if LabelScanClient.isConfigured {
             do {
-                let item = try await LabelScanClient.scan(jpegData: jpeg)
+                var item = try await LabelScanClient.scan(jpegData: jpeg)
                 ScanLog.step(21, "LLM path SUCCESS → FoodItem name='\(item.normalizedName)' category=\(item.category.rawValue)")
+                // Label classification doesn't give per-SKU co2/ef/plastic/
+                // water — fill those via the Cell-8 estimator just like the
+                // barcode path does. Without this, every label scan falls
+                // through to the category-baseline scoring branch.
+                await fillMissingWithLLM(&item)
                 let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
                 self.liveProduct = product
                 self.status = .idle

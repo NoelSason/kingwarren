@@ -368,7 +368,9 @@ struct ScanView: View {
     private func handleBarcode(_ barcode: String) async {
         processing = true
         defer { processing = false }
-        await coordinator.handleBarcode(barcode)
+        await coordinator.handleBarcode(barcode, captureFallbackPhoto: { [camera] in
+            try await camera.capturePhoto()
+        })
     }
 
     private func captureLabel() async {
