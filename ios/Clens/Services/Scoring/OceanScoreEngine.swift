@@ -217,7 +217,8 @@ enum OceanScoreEngine {
             breakdown: breakdown,
             facts: facts,
             origin: item.sourceOrigin ?? "—",
-            badges: [badge]
+            badges: [badge],
+            imageURL: item.imageFrontURL
         )
     }
 }

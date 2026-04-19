@@ -24,6 +24,7 @@ struct Pill: View {
 struct ProductThumb: View {
     let pid: String
     var size: CGFloat = 56
+    var imageURL: String? = nil
 
     private var seed: (Color, Color) {
         switch pid {
@@ -37,13 +38,35 @@ struct ProductThumb: View {
         }
     }
 
-    var body: some View {
+    private var placeholder: some View {
         ZStack {
             StripedFill(colors: seed)
             LinearGradient(
                 colors: [Color.white.opacity(0.14), Color.black.opacity(0.2)],
                 startPoint: .top, endPoint: .bottom
             )
+        }
+    }
+
+    var body: some View {
+        Group {
+            if let s = imageURL, let url = URL(string: s) {
+                AsyncImage(url: url, transaction: Transaction(animation: .easeInOut(duration: 0.2))) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFit().padding(size * 0.05)
+                    case .failure:
+                        placeholder
+                    case .empty:
+                        placeholder.overlay(ProgressView().tint(.white.opacity(0.7)))
+                    @unknown default:
+                        placeholder
+                    }
+                }
+                .background(Color.white)
+            } else {
+                placeholder
+            }
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))

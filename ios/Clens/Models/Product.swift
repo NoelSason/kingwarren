@@ -11,6 +11,7 @@ struct Product: Identifiable, Hashable {
     let facts: [String]
     let origin: String
     let badges: [String]
+    var imageURL: String? = nil
 
     struct Breakdown: Hashable {
         let climate: Int

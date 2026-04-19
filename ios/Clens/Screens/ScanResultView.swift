@@ -106,7 +106,7 @@ struct ScanResultView: View {
                                 .stroke(Color.hair, lineWidth: 1)
                         )
                         .frame(width: 140, height: 180)
-                    ProductThumb(pid: p.id, size: 120)
+                    ProductThumb(pid: p.id, size: 120, imageURL: p.imageURL)
                 }
                 .offset(y: 40)
             }
@@ -230,7 +230,7 @@ struct ScanResultView: View {
         } label: {
             HStack(spacing: 14) {
                 HStack(spacing: 4) {
-                    ProductThumb(pid: pid, size: 42)
+                    ProductThumb(pid: pid, size: 42, imageURL: p.imageURL)
                     IconSwap(size: 16).foregroundStyle(.white.opacity(0.6))
                     ProductThumb(pid: swap.to, size: 42)
                 }
