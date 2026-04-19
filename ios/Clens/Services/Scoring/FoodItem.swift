@@ -36,6 +36,12 @@ struct FoodItem: Codable, Hashable {
     var waterScore: Double?
     var waterLitersPerKg: Int?         // display passthrough from LLM / default
 
+    // Net product mass in kg (e.g., a 240 g Doritos bag is 0.24). Sourced from
+    // OFF's product_quantity / quantity when available, else nil. Scoring uses
+    // this to scale impact by actual package size, so a family bag is
+    // penalized more than a single-serving one.
+    var sizeKg: Double?
+
     // Optional provenance
     var rawLabelText: String
     var barcode: String?
@@ -61,6 +67,7 @@ struct FoodItem: Codable, Hashable {
             plasticScore: nil,
             waterScore: nil,
             waterLitersPerKg: nil,
+            sizeKg: nil,
             rawLabelText: "",
             barcode: barcode,
             sourceOrigin: nil,
