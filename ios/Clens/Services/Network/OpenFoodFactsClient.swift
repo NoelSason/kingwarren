@@ -27,6 +27,10 @@ enum OpenFoodFactsClient {
         let ingredients_text: String?
         let ecoscore_data: OFFEcoscoreData?
         let image_front_url: String?
+        // product_quantity is grams as a string; quantity is a human label like
+        // "240 g" or "1.5 L". Prefer product_quantity, fall back to parsing.
+        let product_quantity: String?
+        let quantity: String?
     }
 
     struct OFFPackaging: Decodable {
@@ -132,6 +136,35 @@ enum OpenFoodFactsClient {
         return lower.contains(where: { $0.contains("organic") || $0.contains("bio") })
     }
 
+    // Convert OFF's product_quantity (grams, as a string) or quantity
+    // ("240 g", "1.5 L", "12 oz") into kilograms. Liquids are treated as
+    // ~1 kg/L which is accurate for water-based beverages and good enough
+    // for size-scaling penalties on everything else.
+    static func sizeKg(productQuantity: String?, quantity: String?) -> Double? {
+        if let pq = productQuantity, let grams = Double(pq.trimmingCharacters(in: .whitespaces)), grams > 0 {
+            return grams / 1000.0
+        }
+        guard let q = quantity?.lowercased() else { return nil }
+        // Extract the first number in the string.
+        var numStr = ""
+        var sawDot = false
+        for ch in q {
+            if ch.isNumber { numStr.append(ch) }
+            else if ch == "." && !sawDot { numStr.append(ch); sawDot = true }
+            else if !numStr.isEmpty { break }
+        }
+        guard let n = Double(numStr), n > 0 else { return nil }
+        if q.contains("kg") { return n }
+        if q.contains("mg") { return n / 1_000_000.0 }
+        if q.contains("g") { return n / 1000.0 }
+        if q.contains("ml") { return n / 1000.0 }   // assume ~1 g/mL
+        if q.contains("cl") { return n / 100.0 }
+        if q.contains("l") { return n }              // liters ≈ kg
+        if q.contains("oz") { return n * 0.02835 }
+        if q.contains("lb") { return n * 0.4536 }
+        return nil
+    }
+
     // Small in-memory cache so a repeated scan of the same bottle in a demo
     // doesn't slam OFF and re-trigger 429 throttling.
     private static var cache: [String: FoodItem] = [:]
@@ -210,6 +243,8 @@ enum OpenFoodFactsClient {
         item.agribalyseEF = ef
         item.plasticScore = plasticScoreValue
         item.imageFrontURL = product.image_front_url
+        item.sizeKg = sizeKg(productQuantity: product.product_quantity, quantity: product.quantity)
+        ScanLog.step(9, "size: product_quantity='\(product.product_quantity ?? "nil")' quantity='\(product.quantity ?? "nil")' → sizeKg=\(item.sizeKg.map { String(format: "%.3f", $0) } ?? "nil")")
         cache[barcode] = item
         return item
     }

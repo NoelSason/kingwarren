@@ -10,6 +10,7 @@
 		00BD01B7C45A9425EFBD9A52 /* OceanStressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91E5C3E9B395D29DCADE3FC /* OceanStressService.swift */; };
 		0982C5C5091F2032964B1BA9 /* SwapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00CA355780BE4AEFAE5B114 /* SwapView.swift */; };
 		1BD124983B854341F6E57D06 /* ReceiptClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = BF71E6D813C3996632814440 /* ReceiptClassifier.mlmodel */; };
+		A1B2C3D4E5F6789000000A0E /* EnvRegressionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789000000A0F /* EnvRegressionModel.swift */; };
 		21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */; };
 		2316C3BFC568A24BA5854161 /* ScanHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0B80FB355F3C229013668B /* ScanHistoryView.swift */; };
 		297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930E479523DAAAF3D799F363 /* CategoryImpacts.swift */; };
@@ -75,6 +76,7 @@
 		B7DE3ED0FF2AA11D2A433D5F /* Product.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product.swift; sourceTree = "<group>"; };
 		BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinator.swift; sourceTree = "<group>"; };
 		BF71E6D813C3996632814440 /* ReceiptClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = ReceiptClassifier.mlmodel; sourceTree = "<group>"; };
+		A1B2C3D4E5F6789000000A0F /* EnvRegressionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvRegressionModel.swift; sourceTree = "<group>"; };
 		C21DA047553ED9617E2498C0 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
 		C2C81E4435EF769CBEEB9A1A /* ScanResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultView.swift; sourceTree = "<group>"; };
 		C2E9DE1E4AB7B07BFE08CD03 /* LineIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineIcons.swift; sourceTree = "<group>"; };
@@ -173,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				930E479523DAAAF3D799F363 /* CategoryImpacts.swift */,
+				A1B2C3D4E5F6789000000A0F /* EnvRegressionModel.swift */,
 				4E3FF0D4074B43898B222EB6 /* FoodItem.swift */,
 				23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */,
 			);
@@ -327,6 +330,7 @@
 				297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */,
 				F1E65DD8230B6AA5BB01B722 /* ClensApp.swift in Sources */,
 				45AFDFD59DC42E94652D7013 /* Components.swift in Sources */,
+				A1B2C3D4E5F6789000000A0E /* EnvRegressionModel.swift in Sources */,
 				85411E500CE92A849EC06B2A /* FoodItem.swift in Sources */,
 				605921865CD02DB001DDBC73 /* FrameSampler.swift in Sources */,
 				59125EC7D0CFF82BC5ABF5BA /* HomeView.swift in Sources */,
