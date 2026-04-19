@@ -59,8 +59,7 @@ struct ScanResultView: View {
                 }
 
                 SectionHeader(title: "Origin")
-                PlaceholderBox(label: "[ origin map · \(p.origin) ]", height: 120, tone: .cool)
-                    .padding(.horizontal, 16)
+                OriginChartsCard()
 
                 Spacer().frame(height: 30)
             }
@@ -178,13 +177,13 @@ struct ScanResultView: View {
                 Text("LIVE OCEAN MODIFIER")
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(1.5)
-                    .foregroundStyle(Color.oceanInk)
+                    .foregroundStyle(Color.oceanCardText)
                 (Text("Stress index ").font(.system(size: 13))
                  + Text(String(format: "%.2f×", Mock.oceanToday.stressIndex))
                     .font(.system(size: 13, weight: .bold))
                  + Text(" today — runoff-heavy items lose 18 pts vs baseline.")
                     .font(.system(size: 13)))
-                    .foregroundStyle(Color.oceanInk)
+                    .foregroundStyle(Color.oceanCardText)
                     .lineSpacing(2)
             }
             Spacer(minLength: 0)
@@ -192,10 +191,10 @@ struct ScanResultView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(hex: 0xEAF4F7))
+                .fill(Color.oceanCardBg)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color(hex: 0xBFD9E0), lineWidth: 1)
+                        .stroke(Color.oceanCardStroke, lineWidth: 1)
                 )
         )
     }

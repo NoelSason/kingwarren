@@ -76,6 +76,11 @@ struct SignInView: View {
                     .frame(height: 44)
                 }
                 .disabled(isLoading)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.8).onEnded { _ in
+                        submitAdminSignIn()
+                    }
+                )
                 .padding(.top, 16)
 
                 Spacer(minLength: 40)
@@ -140,6 +145,22 @@ struct SignInView: View {
         }
     }
 
+    // Admin long-press shortcut: fake a local session so the demo works offline.
+    private func submitAdminSignIn() {
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        errorMessage = nil
+        let session = AuthSession(
+            accessToken: "local-admin-" + UUID().uuidString,
+            refreshToken: "local-admin-refresh",
+            userID: "admin-local",
+            email: "admin@clens.local",
+            username: "admin",
+            displayName: "Admin"
+        )
+        router.session = session
+        withAnimation { router.authed = true }
+    }
+
     // MARK: - Subviews
 
     @ViewBuilder
@@ -161,12 +182,16 @@ struct SignInView: View {
             .autocorrectionDisabled()
             .textInputAutocapitalization(.never)
             .keyboardType(.emailAddress)
+            .textContentType(.emailAddress)
             .styledInput()
     }
 
     private func passwordField(_ label: String, text: Binding<String>) -> some View {
         SecureField(label, text: text)
             .textFieldStyle(.plain)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .textContentType(mode == .signUp ? .newPassword : .password)
             .styledInput()
     }
 

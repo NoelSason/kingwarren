@@ -35,6 +35,10 @@ final class OceanStressService: ObservableObject {
     // Placeholder hook — wire to real fetch once the backend publishes one.
     func refreshFromRemoteIfAvailable() async {
         guard let remoteURL else { return }
+        let host = remoteURL.host ?? ""
+        let isLocalhost = host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0"
+        let forceLocal = ProcessInfo.processInfo.environment["CLENS_USE_LOCAL_API"] == "1"
+        if isLocalhost && !forceLocal { return }
         do {
             let (data, _) = try await URLSession.shared.data(from: remoteURL)
             struct Payload: Decodable {

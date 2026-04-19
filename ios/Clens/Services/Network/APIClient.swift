@@ -34,6 +34,7 @@ enum APIError: LocalizedError {
     case badURL
     case server(String)
     case notFound
+    case disabled
     case unknown
 
     var errorDescription: String? {
@@ -41,6 +42,7 @@ enum APIError: LocalizedError {
         case .badURL: return "Invalid API URL."
         case .server(let msg): return msg
         case .notFound: return "Not found."
+        case .disabled: return "Local API disabled."
         case .unknown: return "Unknown error."
         }
     }
@@ -51,11 +53,19 @@ final class APIClient {
 
     private let baseURL: URL
     private let session: URLSession
+    private let isDisabled: Bool
 
     private init() {
         let info = Bundle.main.infoDictionary ?? [:]
         let raw = (info["API_BASE_URL"] as? String) ?? "http://127.0.0.1:5000"
-        baseURL = URL(string: raw) ?? URL(string: "http://127.0.0.1:5000")!
+        let resolved = URL(string: raw) ?? URL(string: "http://127.0.0.1:5000")!
+        baseURL = resolved
+
+        let host = resolved.host ?? ""
+        let isLocalhost = host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0"
+        let forceLocal = ProcessInfo.processInfo.environment["CLENS_USE_LOCAL_API"] == "1"
+        isDisabled = isLocalhost && !forceLocal
+
         let cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest = 10
         session = URLSession(configuration: cfg)
@@ -64,6 +74,7 @@ final class APIClient {
     // MARK: - Profile
 
     func upsertProfile(userID: String, email: String, username: String, displayName: String) async throws {
+        if isDisabled { throw APIError.disabled }
         let url = baseURL.appendingPathComponent("/api/profile")
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -79,6 +90,7 @@ final class APIClient {
     }
 
     func fetchProfile(userID: String) async throws -> DatabricksProfile {
+        if isDisabled { throw APIError.disabled }
         let url = baseURL.appendingPathComponent("/api/profile/\(userID)")
         let req = URLRequest(url: url)
         let (data, resp) = try await session.data(for: req)
@@ -90,6 +102,7 @@ final class APIClient {
     // MARK: - Ocean stress
 
     func fetchOceanStress() async throws -> OceanStressPayload {
+        if isDisabled { throw APIError.disabled }
         let url = baseURL.appendingPathComponent("/api/ocean-stress")
         let (data, resp) = try await session.data(for: URLRequest(url: url))
         try checkStatus(data: data, resp: resp)

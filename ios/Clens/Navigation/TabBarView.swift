@@ -16,8 +16,8 @@ struct TabBarView: View {
             tab(.leaderboard, label: "Board")   { IconTrophy(size: 22) }
             tab(.profile,     label: "Profile") { IconUser(size: 22) }
         }
-        .padding(.top, 10)
-        .padding(.bottom, max(safeBottomInset - 12, 4))
+        .padding(.top, 4)
+        .padding(.bottom, max(safeBottomInset - 4, 10))
         .background(
             Color.bg
                 .overlay(
@@ -59,13 +59,13 @@ struct TabBarView: View {
                     IconScan(size: 22)
                         .foregroundStyle(Color.white)
                 }
-                .offset(y: -14)
+                .offset(y: -8)
 
                 Text("Scan")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(0.3)
                     .foregroundStyle(Color.ink3)
-                    .offset(y: -14)
+                    .offset(y: -8)
             }
             .frame(maxWidth: .infinity)
         }

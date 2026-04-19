@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: - Pill
 
@@ -300,6 +301,199 @@ struct Facet: View {
                 Color.hair.frame(height: 1)
             }
         }
+    }
+}
+
+// MARK: - Origin charts card (replaces PlaceholderBox in ScanResultView)
+
+struct OriginChartsCard: View {
+    @EnvironmentObject var ocean: OceanStressService
+    @EnvironmentObject var history: ScanHistoryStore
+
+    var body: some View {
+        VStack(spacing: 12) {
+            stressPanel
+            scoresPanel
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: Panel A — regional stress time series
+    private var stressPanel: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("REGIONAL OCEAN STRESS · CCE2")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.4)
+                    .foregroundStyle(Color.oceanCardText.opacity(0.8))
+                Spacer()
+                Text(String(format: "now %.2f×", ocean.stressIndex))
+                    .font(.mono(10, weight: .semibold))
+                    .foregroundStyle(Color.oceanCardText)
+            }
+
+            Chart {
+                ForEach(stressSeries, id: \.date) { pt in
+                    LineMark(
+                        x: .value("Date", pt.date),
+                        y: .value("Stress", pt.value)
+                    )
+                    .foregroundStyle(Color.ocean)
+                    .interpolationMethod(.catmullRom)
+                }
+                RuleMark(y: .value("Normal", 1.0))
+                    .foregroundStyle(Color.oceanCardText.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .annotation(position: .topTrailing, alignment: .trailing) {
+                        Text("normal")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.oceanCardText.opacity(0.6))
+                            .padding(.trailing, 4)
+                    }
+            }
+            .chartYScale(domain: 0...2)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .month, count: 1)) { _ in
+                    AxisValueLabel(format: .dateTime.month(.abbreviated))
+                        .foregroundStyle(Color.oceanCardText.opacity(0.7))
+                    AxisGridLine().foregroundStyle(Color.oceanCardText.opacity(0.12))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: [0, 1, 2]) {
+                    AxisValueLabel().foregroundStyle(Color.oceanCardText.opacity(0.7))
+                    AxisGridLine().foregroundStyle(Color.oceanCardText.opacity(0.12))
+                }
+            }
+            .frame(height: 130)
+
+            Text("modeled demo series · actual stress adjusts today's score only")
+                .font(.system(size: 10))
+                .foregroundStyle(Color.oceanCardText.opacity(0.55))
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.oceanCardBg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.oceanCardStroke, lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: Panel B — recent scan scores
+    private var scoresPanel: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("RECENT SCANS · OCEAN SCORE")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.4)
+                    .foregroundStyle(Color.ink3)
+                Spacer()
+                Text("\(scoreRows.count) items")
+                    .font(.mono(10, weight: .semibold))
+                    .foregroundStyle(Color.ink3)
+            }
+
+            Chart(scoreRows) { row in
+                BarMark(
+                    x: .value("Score", row.score),
+                    y: .value("Product", row.name)
+                )
+                .foregroundStyle(Score.color(row.score))
+                .cornerRadius(4)
+                .annotation(position: .trailing) {
+                    Text("\(row.score)")
+                        .font(.mono(10))
+                        .foregroundStyle(Color.ink2)
+                }
+            }
+            .chartXScale(domain: 0...100)
+            .chartXAxis {
+                AxisMarks(values: [0, 50, 100]) {
+                    AxisValueLabel().foregroundStyle(Color.ink3)
+                    AxisGridLine().foregroundStyle(Color.hair)
+                }
+            }
+            .chartYAxis {
+                AxisMarks { _ in
+                    AxisValueLabel().foregroundStyle(Color.ink2)
+                }
+            }
+            .frame(height: CGFloat(max(140, scoreRows.count * 22 + 10)))
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.hair, lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: - Data
+
+    private struct StressPoint { let date: Date; let value: Double }
+    private struct ScoreRow: Identifiable {
+        let id = UUID()
+        let name: String
+        let score: Int
+    }
+
+    // Synthesize ~90 days of stress, ending at today's current value. Purely
+    // cosmetic — mirrors the shape of the reference chart so the panel feels
+    // alive during the demo. Scoring does not read this series.
+    private var stressSeries: [StressPoint] {
+        let days = 90
+        let now = Date()
+        let cal = Calendar.current
+        let current = ocean.stressIndex
+        var rng = SeededRNG(seed: 0x0CE4)
+        return (0..<days).reversed().map { offset in
+            let date = cal.date(byAdding: .day, value: -offset, to: now) ?? now
+            // Seasonal sine (weekly period to look textured), plus noise, pulled
+            // toward `current` at the right edge so it lands on today's value.
+            let t = Double(days - offset) / Double(days)
+            let season = 0.55 * sin(Double(days - offset) * .pi / 10)
+            let drift = 0.35 * sin(Double(days - offset) * .pi / 42)
+            let noise = rng.next() * 0.25 - 0.125
+            let base = 1.0 + season + drift + noise
+            let pulled = base * (1 - t) + current * t
+            return StressPoint(date: date, value: max(0, min(2, pulled)))
+        }
+    }
+
+    private var scoreRows: [ScoreRow] {
+        let recent = history.records.prefix(10)
+        if recent.isEmpty {
+            return Mock.products.values
+                .sorted { $0.score > $1.score }
+                .prefix(8)
+                .map { ScoreRow(name: $0.name, score: $0.score) }
+        }
+        var seen = Set<String>()
+        var rows: [ScoreRow] = []
+        for r in recent {
+            guard !seen.contains(r.productName) else { continue }
+            seen.insert(r.productName)
+            rows.append(ScoreRow(name: r.productName, score: r.score))
+        }
+        return rows
+    }
+}
+
+// Tiny deterministic PRNG so the stress line is stable across renders.
+private struct SeededRNG {
+    var state: UInt64
+    init(seed: UInt64) { self.state = seed | 1 }
+    mutating func next() -> Double {
+        state &*= 6364136223846793005
+        state &+= 1442695040888963407
+        let x = Double((state >> 33) & 0xFFFFFFFF) / Double(UInt32.max)
+        return x
     }
 }
 

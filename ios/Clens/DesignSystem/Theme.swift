@@ -20,6 +20,11 @@ extension Color {
     static let warn     = Color(hex: 0xC7591A)
     static let bad      = Color(hex: 0xC7441F)
 
+    // Ocean-card surfaces (Live Ocean Modifier, chart cards) — adaptive.
+    static let oceanCardBg     = Color(uiColor: .init(light: 0xEAF4F7, dark: 0x0F2A35))
+    static let oceanCardStroke = Color(uiColor: .init(light: 0xBFD9E0, dark: 0x1E4556))
+    static let oceanCardText   = Color(uiColor: .init(light: 0x093B52, dark: 0xCFE7F1))
+
     init(hex: UInt32, alpha: Double = 1.0) {
         let r = Double((hex >> 16) & 0xFF) / 255.0
         let g = Double((hex >> 8)  & 0xFF) / 255.0

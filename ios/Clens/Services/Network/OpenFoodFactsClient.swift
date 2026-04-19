@@ -242,7 +242,9 @@ enum OpenFoodFactsClient {
         item.agribalyseCO2Kg = co2Kg
         item.agribalyseEF = ef
         item.plasticScore = plasticScoreValue
-        item.imageFrontURL = product.image_front_url
+        item.imageFrontURL = product.image_front_url.map {
+            $0.hasPrefix("http://") ? "https://" + $0.dropFirst("http://".count) : $0
+        }
         item.sizeKg = sizeKg(productQuantity: product.product_quantity, quantity: product.quantity)
         ScanLog.step(9, "size: product_quantity='\(product.product_quantity ?? "nil")' quantity='\(product.quantity ?? "nil")' → sizeKg=\(item.sizeKg.map { String(format: "%.3f", $0) } ?? "nil")")
         cache[barcode] = item

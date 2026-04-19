@@ -2,6 +2,11 @@ import SwiftUI
 
 struct LeaderboardView: View {
     @State private var scope: Scope = .local
+    @State private var podiumProgress: CGFloat = 1
+
+    // Session-scoped flag: animation plays once per cold launch, not on every
+    // tab switch (RootView recreates this view each time you tap Board).
+    private static var podiumHasPlayed = false
 
     enum Scope: String, CaseIterable, Identifiable {
         case local, friends, global
@@ -18,9 +23,13 @@ struct LeaderboardView: View {
 
                 scopeSwitch.padding(.horizontal, 16).padding(.top, 14)
 
-                podiumRow.padding(.horizontal, 20).padding(.top, 22)
+                podiumRow
+                    .padding(.horizontal, 20)
+                    .padding(.top, 22)
+                    .padding(.bottom, 28)
 
                 SectionHeader(title: "Everyone else")
+                    .padding(.top, 4)
                 listCard
 
                 SectionHeader(title: "Perks by rank")
@@ -31,6 +40,14 @@ struct LeaderboardView: View {
             .padding(.bottom, 110)
         }
         .background(Color.bg.ignoresSafeArea())
+        .onAppear {
+            guard !Self.podiumHasPlayed else { return }
+            podiumProgress = 0
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.72).delay(0.05)) {
+                podiumProgress = 1
+            }
+            Self.podiumHasPlayed = true
+        }
     }
 
     private var header: some View {
@@ -73,11 +90,14 @@ struct LeaderboardView: View {
         HStack(alignment: .bottom, spacing: 10) {
             if leaders.count >= 3 {
                 Podium(name: leaders[1].name, pts: leaders[1].pts, rank: 2,
-                       height: 105, color: Color(hex: 0xBFA67A), crown: false, isMe: leaders[1].isMe)
+                       height: 105, color: Color(hex: 0xBFA67A), crown: false, isMe: leaders[1].isMe,
+                       progress: podiumProgress, riseDelay: 0.12)
                 Podium(name: leaders[0].name, pts: leaders[0].pts, rank: 1,
-                       height: 140, color: Color(hex: 0xE3C96A), crown: true, isMe: leaders[0].isMe)
+                       height: 140, color: Color(hex: 0xE3C96A), crown: true, isMe: leaders[0].isMe,
+                       progress: podiumProgress, riseDelay: 0.0)
                 Podium(name: leaders[2].name, pts: leaders[2].pts, rank: 3,
-                       height: 85, color: Color(hex: 0xD89A72), crown: false, isMe: leaders[2].isMe)
+                       height: 85, color: Color(hex: 0xD89A72), crown: false, isMe: leaders[2].isMe,
+                       progress: podiumProgress, riseDelay: 0.2)
             }
         }
         .frame(height: 200)
@@ -144,9 +164,15 @@ private struct Podium: View {
     let color: Color
     let crown: Bool
     let isMe: Bool
+    let progress: CGFloat
+    let riseDelay: Double
 
     private var initials: String {
         String(name.split(separator: " ").compactMap { $0.first }.prefix(2)).uppercased()
+    }
+
+    private var barHeight: CGFloat {
+        max(0, height * progress)
     }
 
     var body: some View {
@@ -175,11 +201,14 @@ private struct Podium: View {
                     style: .continuous
                 )
                 .fill(color)
-                .frame(height: height)
+                .frame(height: barHeight)
+                .animation(.spring(response: 0.7, dampingFraction: 0.72).delay(riseDelay),
+                           value: progress)
                 Text("\(rank)")
                     .font(.serif(22, weight: .bold))
                     .foregroundStyle(.white)
                     .padding(.top, 8)
+                    .opacity(progress)
             }
         }
         .frame(maxWidth: 100)
