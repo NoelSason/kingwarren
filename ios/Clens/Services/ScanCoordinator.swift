@@ -246,21 +246,22 @@ final class ScanCoordinator: ObservableObject {
         }
     }
 
-    // Writes the scan to Supabase and bumps the signed-in user's seabucks
-    // balance via the add_seabucks RPC. In-memory ProfileService.balance is
-    // updated so Home / Rewards / Profile reflect the new total immediately.
-    // Silent no-op if there's no session or Supabase isn't configured.
+    // Credits the scan locally so Home / Rewards / Profile reflect the new
+    // balance on the next frame, then fires a best-effort Supabase sync in
+    // the background. The local credit is the source of truth for the demo —
+    // the Supabase write is treated as telemetry and its result is ignored.
     private func syncReceiptToSupabase(_ receipt: Receipt) async {
-        guard let userID = session?.userID else {
-            ScanLog.step(34, "no session — skipping Supabase scan sync")
-            return
-        }
-        do {
-            let newBalance = try await ScanSyncService.sync(userID: userID, receipt: receipt)
-            ScanLog.step(34, "Supabase scan sync OK: +\(receipt.earned) → new balance=\(newBalance)")
-            profileService?.balance = newBalance
-        } catch {
-            ScanLog.step(34, "Supabase scan sync FAILED: \(error)")
+        profileService?.credit(receipt.earned)
+        ScanLog.step(34, "local credit applied: +\(receipt.earned) → balance=\(profileService?.balance ?? -1)")
+
+        guard let userID = session?.userID else { return }
+        Task {
+            do {
+                _ = try await ScanSyncService.sync(userID: userID, receipt: receipt)
+                ScanLog.step(34, "Supabase scan sync OK (background)")
+            } catch {
+                ScanLog.step(34, "Supabase scan sync FAILED (background): \(error) — ignored, local balance stands")
+            }
         }
     }
 
