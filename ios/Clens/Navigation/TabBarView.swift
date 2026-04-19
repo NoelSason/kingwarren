@@ -3,6 +3,11 @@ import SwiftUI
 struct TabBarView: View {
     @EnvironmentObject var router: AppRouter
 
+    private var safeBottomInset: CGFloat {
+        let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        return scene?.windows.first?.safeAreaInsets.bottom ?? 0
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             tab(.home,        label: "Home")    { IconHome(size: 22) }
@@ -12,7 +17,7 @@ struct TabBarView: View {
             tab(.profile,     label: "Profile") { IconUser(size: 22) }
         }
         .padding(.top, 10)
-        .padding(.bottom, 34)
+        .padding(.bottom, max(safeBottomInset - 12, 4))
         .background(
             Color.bg
                 .overlay(

@@ -2,8 +2,21 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var router: AppRouter
-    private var user: UserProfile { Mock.warren }
+    @EnvironmentObject var profileService: ProfileService
     @AppStorage("clens.darkMode") private var darkMode: Bool = false
+
+    private var displayName: String {
+        profileService.profile?.displayName
+            ?? router.session?.displayName
+            ?? Mock.warren.name
+    }
+    private var handle: String {
+        let u = profileService.profile?.username ?? router.session?.username ?? ""
+        return u.isEmpty ? Mock.warren.handle : "@\(u)"
+    }
+    private var seabucks: Int {
+        profileService.profile?.seabucks ?? Mock.warren.points
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -53,24 +66,24 @@ struct ProfileView: View {
                 .fill(Color.coral)
                 .frame(width: 84, height: 84)
                 .overlay(
-                    Text(initials(user.name))
+                    Text(initials(displayName))
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
                 )
-            Text(user.name)
+            Text(displayName)
                 .font(.serif(28))
                 .padding(.top, 14)
-            Text("\(user.handle) · La Jolla, CA")
+            Text("\(handle) · La Jolla, CA")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.ink2)
                 .padding(.top, 4)
             HStack(spacing: 6) {
                 IconShield(size: 12).foregroundStyle(Color.ocean)
-                Text(user.rank)
+                Text(Mock.warren.rank)
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.5)
                     .foregroundStyle(Color.ink)
-                Text("· \(user.streak) day streak")
+                Text("· \(Mock.warren.streak) day streak")
                     .font(.system(size: 11))
                     .foregroundStyle(Color.ink3)
             }
@@ -84,14 +97,14 @@ struct ProfileView: View {
 
     private var lifetimeTiles: some View {
         HStack(spacing: 8) {
-            StatTile(label: "CO\u{2082} saved",
-                     value: "\(user.lifetimeCO2) kg",
-                     sub: "≈ 460 mi not driven")
+            StatTile(label: "SeaBucks",
+                     value: "\(seabucks)",
+                     sub: "points earned")
             StatTile(label: "Plastic",
-                     value: String(format: "%.1f kg", user.lifetimePlastic),
+                     value: String(format: "%.1f kg", Mock.warren.lifetimePlastic),
                      sub: "avoided")
             StatTile(label: "Water",
-                     value: String(format: "%.1fK L", Double(user.lifetimeWater) / 1000.0),
+                     value: String(format: "%.1fK L", Double(Mock.warren.lifetimeWater) / 1000.0),
                      sub: "saved")
         }
     }
@@ -165,6 +178,12 @@ struct ProfileView: View {
             MenuRow(icon: AnyView(IconBell(size: 18)), title: "Notifications")
             Color.hair.frame(height: 1)
             MenuRow(icon: AnyView(IconShield(size: 18)), title: "Privacy & data")
+            Color.hair.frame(height: 1)
+            MenuRow(icon: AnyView(Image(systemName: "rectangle.portrait.and.arrow.right")
+                .font(.system(size: 16))), title: "Sign out") {
+                router.session = nil
+                withAnimation { router.authed = false }
+            }
         }
         .padding(.horizontal, 16)
         .background(

@@ -22,6 +22,7 @@ final class AppRouter: ObservableObject {
     @Published var tab: Tab = .home
     @Published var stack: [Route] = []
     @Published var scanMode: ScanMode = .product
+    @Published var session: AuthSession?
 
     var top: Route? { stack.last }
     var showsScan: Bool {

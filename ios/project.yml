@@ -59,8 +59,9 @@ targets:
         UIStatusBarStyle: UIStatusBarStyleDefault
         NSCameraUsageDescription: "Clens uses the camera to scan product barcodes, labels, and grocery receipts so it can show your Ocean Score."
         ANTHROPIC_API_KEY: "$(ANTHROPIC_API_KEY)"
-        SUPABASE_URL: ""
-        SUPABASE_ANON_KEY: ""
+        SUPABASE_URL: "$(SUPABASE_URL)"
+        SUPABASE_ANON_KEY: "$(SUPABASE_ANON_KEY)"
+        API_BASE_URL: "$(API_BASE_URL)"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clens.app
