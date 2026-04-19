@@ -42,12 +42,27 @@ final class ScanCoordinator: ObservableObject {
         ScanLog.step(2, "coordinator received barcode='\(barcode)', starting OFF lookup (stress=\(String(format: "%.2f", ocean.stressIndex)))")
         status = .busy("Looking up barcode…")
         do {
-            let item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
+            var item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
             ScanLog.step(10, "FoodItem built: name='\(item.normalizedName)' brand='\(item.brand)' category=\(item.category.rawValue) organic=\(item.isOrganic) packaging=\(item.packagingType.rawValue)")
             if let co2 = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
                 ScanLog.step(11, "agribalyse carried through: co2=\(String(format: "%.2f", co2))kg/kg ef=\(String(format: "%.2f", ef)) plastic=\(item.hasPlasticPackaging ?? false)")
+            } else if LabelScanClient.isConfigured {
+                ScanLog.step(11, "no agribalyse data — calling LLM estimate (Cell 8 fallback)")
+                status = .busy("Estimating impact…")
+                do {
+                    let est = try await LabelScanClient.estimateEnvironmental(
+                        productName: item.normalizedName,
+                        imageURL: item.imageFrontURL
+                    )
+                    item.agribalyseCO2Kg = est.co2TotalKg
+                    item.agribalyseEF = est.efTotal
+                    item.hasPlasticPackaging = (item.hasPlasticPackaging ?? false) || est.hasPlasticPackaging
+                    ScanLog.step(11, "LLM estimate applied → will score via agribalyse branch")
+                } catch {
+                    ScanLog.step(11, "LLM estimate FAILED (\(error)) — falling back to category baseline")
+                }
             } else {
-                ScanLog.step(11, "no agribalyse data — will fall back to category-baseline scoring")
+                ScanLog.step(11, "no agribalyse data AND LLM not configured — falling back to category baseline")
             }
             let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
             ScanLog.step(17, "product ready: id='\(product.id)' score=\(product.score) displayPoints=\(Int(Double(product.score) * 1.6)) facts=\(product.facts.count)")

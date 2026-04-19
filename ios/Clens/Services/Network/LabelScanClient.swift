@@ -17,6 +17,15 @@ enum LabelScanClient {
         case empty
     }
 
+    // Cell 8 llm_estimate() output — used when OFF returns a product but
+    // Agribalyse lifecycle data is missing.
+    struct EnvEstimate {
+        let co2TotalKg: Double
+        let efTotal: Double
+        let hasPlasticPackaging: Bool
+        let estimatedEcoscore: Int?
+    }
+
     private static var apiKey: String? {
         if let key = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String,
            !key.isEmpty { return key }
@@ -163,5 +172,98 @@ enum LabelScanClient {
             classificationConfidence: extracted.classification_confidence ?? 0.5,
             keyIngredients: extracted.key_ingredients ?? []
         )
+    }
+
+    // Cell 8 llm_estimate() from project_oceanscore.py — used when OFF returns
+    // a product but Agribalyse lifecycle data is missing. Claude estimates
+    // co2_total_kg, ef_total, has_plastic_packaging from the product name
+    // (and front image URL if OFF has one).
+    private static let envEstimatePrompt = """
+    Return ONLY a JSON object, no markdown, no code fences, no commentary:
+    {
+      "co2_total_kg": <float, kg CO2-eq per kg product, typical 0.5-50>,
+      "ef_total": <float, environmental footprint score 0.0-1.5, includes eutrophication>,
+      "has_plastic_packaging": <true/false>,
+      "estimated_ecoscore": <int 0-100, environmental friendliness, 100=best>
+    }
+    """
+
+    private struct EnvEstimateJSON: Decodable {
+        let co2_total_kg: Double?
+        let ef_total: Double?
+        let has_plastic_packaging: Bool?
+        let estimated_ecoscore: Int?
+    }
+
+    static func estimateEnvironmental(productName: String, imageURL: String?) async throws -> EnvEstimate {
+        ScanLog.llm(7, "estimate request: name='\(productName)' image=\(imageURL ?? "none")")
+        guard let key = apiKey else {
+            ScanLog.llm(7, "ABORT: ANTHROPIC_API_KEY missing")
+            throw LabelError.missingAPIKey
+        }
+
+        let textBlock: [String: Any] = [
+            "type": "text",
+            "text": "Estimate environmental impact for this food product: \"\(productName)\"\n\n\(envEstimatePrompt)"
+        ]
+        var content: [[String: Any]] = []
+        if let imageURL, let _ = URL(string: imageURL) {
+            content.append([
+                "type": "image",
+                "source": ["type": "url", "url": imageURL]
+            ])
+        }
+        content.append(textBlock)
+
+        let model = "claude-haiku-4-5"
+        let body: [String: Any] = [
+            "model": model,
+            "max_tokens": 300,
+            "messages": [["role": "user", "content": content]]
+        ]
+
+        var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.setValue(key, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 20
+        ScanLog.llm(8, "POST https://api.anthropic.com/v1/messages model=\(model) image=\(imageURL != nil)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+        ScanLog.llm(8, "Anthropic response status=\(statusCode) bytes=\(data.count)")
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw LabelError.network(http.statusCode)
+        }
+
+        let decoded = try JSONDecoder().decode(MessageResponse.self, from: data)
+        guard let raw = decoded.content.first(where: { $0.type == "text" })?.text, !raw.isEmpty else {
+            throw LabelError.empty
+        }
+        var json = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if json.hasPrefix("```") {
+            let fenced = json.split(separator: "```").map(String.init)
+            if fenced.count >= 2 {
+                var inner = fenced[1]
+                if inner.lowercased().hasPrefix("json") { inner = String(inner.dropFirst(4)) }
+                json = inner.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        guard let jsonData = json.data(using: .utf8) else { throw LabelError.decoding }
+        let parsed = try JSONDecoder().decode(EnvEstimateJSON.self, from: jsonData)
+
+        let est = EnvEstimate(
+            co2TotalKg: parsed.co2_total_kg ?? 5.0,
+            efTotal: parsed.ef_total ?? 0.5,
+            hasPlasticPackaging: parsed.has_plastic_packaging ?? false,
+            estimatedEcoscore: parsed.estimated_ecoscore
+        )
+        ScanLog.llm(9, String(format: "estimate parsed: co2=%.2f ef=%.2f plastic=%@ ecoscore=%@",
+                              est.co2TotalKg, est.efTotal,
+                              est.hasPlasticPackaging ? "true" : "false",
+                              est.estimatedEcoscore.map { "\($0)" } ?? "nil"))
+        return est
     }
 }

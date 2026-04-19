@@ -34,6 +34,7 @@ struct FoodItem: Codable, Hashable {
     var rawLabelText: String
     var barcode: String?
     var sourceOrigin: String?
+    var imageFrontURL: String?   // used by LLM fallback when agribalyse is missing
 
     static func unknown(name: String = "Unknown product", barcode: String? = nil) -> FoodItem {
         let base = CategoryImpacts.baseline[.unknown]!
@@ -54,7 +55,8 @@ struct FoodItem: Codable, Hashable {
             hasPlasticPackaging: nil,
             rawLabelText: "",
             barcode: barcode,
-            sourceOrigin: nil
+            sourceOrigin: nil,
+            imageFrontURL: nil
         )
     }
 }

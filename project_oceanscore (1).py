@@ -305,7 +305,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error
 import anthropic
 
 # Make sure ANTHROPIC_API_KEY is set above this cell:
-os.environ["ANTHROPIC_API_KEY"] = "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"
+os.environ.setdefault("ANTHROPIC_API_KEY", "")  # set externally; see ios/Clens/Secrets.xcconfig for the iOS build
 client = anthropic.Anthropic()
 
 print("="*60)

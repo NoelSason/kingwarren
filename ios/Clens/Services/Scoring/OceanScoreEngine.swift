@@ -78,7 +78,8 @@ enum OceanScoreEngine {
             hasPlasticPackaging: nil,
             rawLabelText: "",
             barcode: barcode,
-            sourceOrigin: sourceOrigin
+            sourceOrigin: sourceOrigin,
+            imageFrontURL: nil
         )
     }
 

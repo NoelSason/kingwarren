@@ -26,6 +26,7 @@ enum OpenFoodFactsClient {
         let origins: String?
         let ingredients_text: String?
         let ecoscore_data: OFFEcoscoreData?
+        let image_front_url: String?
     }
 
     struct OFFPackaging: Decodable {
@@ -119,18 +120,37 @@ enum OpenFoodFactsClient {
         return lower.contains(where: { $0.contains("organic") || $0.contains("bio") })
     }
 
+    // Small in-memory cache so a repeated scan of the same bottle in a demo
+    // doesn't slam OFF and re-trigger 429 throttling.
+    private static var cache: [String: FoodItem] = [:]
+
     static func fetchFoodItem(barcode: String) async throws -> FoodItem {
+        if let cached = cache[barcode] {
+            ScanLog.step(3, "OFF cache HIT for barcode=\(barcode) — skipping HTTP")
+            return cached
+        }
         guard let url = URL(string: "https://world.openfoodfacts.org/api/v2/product/\(barcode).json") else {
             throw OFFError.notFound
         }
         var request = URLRequest(url: url)
-        request.setValue("Clens/0.1 (datahacks2026)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Clens/0.1 (datahacks2026; contact=team@clens.app)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 10
         ScanLog.step(3, "OFF GET \(url.absoluteString)")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+        var (data, response) = try await URLSession.shared.data(for: request)
+        var statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
         ScanLog.step(4, "OFF response status=\(statusCode) bytes=\(data.count)")
+
+        // OFF throttles aggressive polling. One retry after a short back-off
+        // usually gets through during a demo.
+        if statusCode == 429 {
+            ScanLog.step(4, "OFF 429 — retrying after 1.5s back-off")
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            (data, response) = try await URLSession.shared.data(for: request)
+            statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            ScanLog.step(4, "OFF retry response status=\(statusCode) bytes=\(data.count)")
+        }
+
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
             throw OFFError.network(http.statusCode)
         }
@@ -177,6 +197,8 @@ enum OpenFoodFactsClient {
         item.agribalyseCO2Kg = co2Kg
         item.agribalyseEF = ef
         item.hasPlasticPackaging = plastic
+        item.imageFrontURL = product.image_front_url
+        cache[barcode] = item
         return item
     }
 }
