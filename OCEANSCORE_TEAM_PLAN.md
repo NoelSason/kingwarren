@@ -687,7 +687,198 @@ Examples:
 - crumpled receipt robustness
 - confidence score UI support
 
-## 12. Scoring System Recommendation
+## 12. Aarav + Sean Joint Execution Plan
+
+This is the safest way for Aarav and Sean to work in parallel without blocking each other.
+
+### Responsibility split
+
+Sean owns the `scan in -> cleaned item out` side:
+
+- OCR on receipts and item photos
+- text cleanup and normalization
+- abbreviation mapping
+- scan endpoints
+- confidence on raw scan output
+
+Aarav owns the `cleaned item in -> scored result out` side:
+
+- category classification
+- scoring rules
+- Ocean Score calculation
+- points mapping
+- swap suggestion structure
+- CalCOFI-based multiplier logic
+
+### Integration boundary between them
+
+Sean should return a stable intermediate item shape before Aarav builds the full scoring layer.
+
+Recommended handoff shape:
+
+```json
+{
+  "raw_text": "GRND BF 80/20",
+  "normalized_name": "ground beef 80/20",
+  "scan_confidence": 0.94,
+  "source": "receipt",
+  "quantity_text": "1",
+  "merchant": "Trader Joe's"
+}
+```
+
+Then Aarav should enrich that into:
+
+```json
+{
+  "raw_text": "GRND BF 80/20",
+  "normalized_name": "ground beef 80/20",
+  "scan_confidence": 0.94,
+  "category": "beef",
+  "classification_confidence": 0.91,
+  "climate_impact": 92,
+  "runoff_impact": 85,
+  "plastic_impact": 20,
+  "ocean_score": 18,
+  "points": 1
+}
+```
+
+That way Sean does not need to wait for final scoring logic, and Aarav does not need to own OCR details.
+
+### Build order
+
+#### Step 1: lock the category list first
+
+Aarav and Sean should agree on one shared category list before coding too much.
+
+Suggested first-pass categories:
+
+- beef
+- dairy
+- poultry
+- seafood
+- vegetables
+- fruit
+- legumes
+- grains
+- packaged snacks
+- beverages
+- household
+- unknown
+
+If this list changes too late, both OCR cleanup and scoring rules will drift.
+
+#### Step 2: Sean builds the raw scan pipeline
+
+Sean should first make `POST /api/scan-receipt` and `POST /api/scan-item` return:
+
+- raw text
+- normalized name
+- scan confidence
+- optional merchant/source metadata
+
+Do not wait for perfect OCR. A stable response shape matters more than perfect accuracy in the first pass.
+
+#### Step 3: Aarav builds classification on sample normalized items
+
+Aarav should start from manually curated sample inputs, not live OCR.
+
+First classifier target:
+
+- input: `normalized_name`
+- output: `category`, `classification_confidence`
+
+This lets Aarav move fast while Sean is still improving scan quality.
+
+#### Step 4: Aarav adds deterministic scoring
+
+Once category classification works, Aarav should add:
+
+- category to impact lookup
+- Ocean Score formula
+- points mapping
+- swap suggestion output format
+
+Keep this rules-based first so the team has something explainable for demos.
+
+#### Step 5: first backend integration
+
+Once Sean's scan API and Aarav's classifier both work separately, connect them in one simple path:
+
+1. Sean endpoint returns normalized items.
+2. Aarav scoring code consumes those normalized items.
+3. Combined response returns scored items plus total points.
+
+Do this for receipts first before item-photo edge cases.
+
+#### Step 6: CalCOFI multiplier after the basic score works
+
+Do not put dataset integration in the critical path on day 1.
+
+Add CalCOFI only after:
+
+- scan output is stable
+- category classification works
+- baseline scoring works
+
+Then attach the ocean stress multiplier as a separate layer on top of the base score.
+
+#### Step 7: harden the edge cases
+
+After the main flow works, improve:
+
+- low-confidence scan fallback
+- `unknown` category handling
+- duplicate or noisy receipt lines
+- item names that map to multiple categories
+
+### Recommended order by day
+
+#### Day 1
+
+- Sean: OCR prototype plus normalized item output
+- Aarav: category list plus first-pass classifier
+- Shared: freeze the intermediate JSON shape
+
+#### Day 2
+
+- Sean: scan endpoints return stable sample data
+- Aarav: scoring formula and points logic work on sample normalized items
+- Shared: run scan output through classifier on at least 10 sample items
+
+#### Day 3
+
+- integrate scan endpoint to scoring pipeline
+- return one full receipt response
+- test unknown/low-confidence cases
+
+#### Day 4
+
+- add CalCOFI multiplier
+- tune category priors and score thresholds
+- prepare one demo-ready receipt example
+
+### Handoff rules
+
+- Sean should not return category labels unless Aarav explicitly asks for them in the shared contract
+- Aarav should not depend on OCR-specific formatting quirks if `normalized_name` is already provided
+- both should keep one shared sample file of normalized items and expected categories
+- if the response schema changes, change it once in writing before changing code
+
+### Fastest integration path for MVP
+
+If time gets tight, use this order only:
+
+1. Sean returns normalized receipt items.
+2. Aarav maps normalized items to categories with simple rules.
+3. Aarav scores the categories.
+4. Backend returns total points and 2 swap suggestions.
+5. CalCOFI multiplier is added last or mocked if needed for the first demo.
+
+That path is much safer than trying to perfect OCR and ML at the same time.
+
+## 13. Scoring System Recommendation
 
 Use a simple formula for the MVP.
 
@@ -735,7 +926,7 @@ Example:
 
 This is simple, explainable, and demo-friendly.
 
-## 13. CalCOFI Integration Plan
+## 14. CalCOFI Integration Plan
 
 Since CalCOFI is not a grocery database, use it like this:
 
@@ -763,7 +954,7 @@ Avoid wording like:
 - `this product caused algal blooms`
 - `CalCOFI proves this milk brand harms the ocean`
 
-## 14. Suggested Day Plan
+## 15. Suggested Day Plan
 
 ### First 2 hours
 
@@ -800,7 +991,7 @@ Avoid wording like:
 - README
 - pitch prep
 
-## 15. Definition Of Done For Each Area
+## 16. Definition Of Done For Each Area
 
 ### Aarav done means
 
@@ -832,7 +1023,7 @@ Avoid wording like:
 - there is a Scripps dataset story
 - pitch is understandable in 30 seconds
 
-## 16. Minimum Demo Flow
+## 17. Minimum Demo Flow
 
 Use this for judging:
 
@@ -846,7 +1037,7 @@ Use this for judging:
 
 That is enough for a strong MVP.
 
-## 17. Nice-To-Have Features If Time Remains
+## 18. Nice-To-Have Features If Time Remains
 
 - item scan before checkout
 - shopping-list recommendation agent
@@ -855,7 +1046,7 @@ That is enough for a strong MVP.
 - special event bonus campaigns
 - trend history for user purchases
 
-## 18. Final Recommendations
+## 19. Final Recommendations
 
 - Build the receipt flow first.
 - Let Noel and Warren use mocked data on the frontend immediately.

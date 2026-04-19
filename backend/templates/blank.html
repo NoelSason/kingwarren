@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OceanScore</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #f5fbfa, #ebf4f5);
+        font-family: Georgia, "Times New Roman", serif;
+        color: #14323a;
+        padding: 32px 18px;
+      }
+
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #d6e5e6;
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(20, 50, 58, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 2rem;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: #4f6b71;
+        line-height: 1.5;
+      }
+
+      .error {
+        margin: 0 0 16px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #fdecec;
+        color: #9b1c1c;
+      }
+
+      pre {
+        margin: 0;
+        padding: 16px;
+        border-radius: 16px;
+        background: #0d1f24;
+        color: #def6fa;
+        overflow-x: auto;
+        line-height: 1.5;
+        font-size: 0.95rem;
+      }
+
+      form {
+        margin-top: 18px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font: inherit;
+        font-weight: 700;
+        color: white;
+        background: #0f766e;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="panel">
+        <h1>Supabase Profile Snapshot</h1>
+        <p>This page shows the auth user and the `profiles` row the app can currently read after sign in or sign up.</p>
+        {% if fetch_error %}
+          <div class="error">{{ fetch_error }}</div>
+        {% endif %}
+        {% if test_password %}
+          <div style="margin-bottom:16px;padding:12px 14px;border-radius:14px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:0.95rem;">
+            <strong>Password (shown once for testing):</strong> {{ test_password }}
+          </div>
+        {% endif %}
+        <pre>{{ pretty_snapshot }}</pre>
+        <form method="post" action="/signout">
+          <button type="submit">Sign out</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
