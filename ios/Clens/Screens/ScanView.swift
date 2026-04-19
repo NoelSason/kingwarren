@@ -14,6 +14,22 @@ struct ScanView: View {
     @State private var pendingReceiptJPEG: Data? = nil
     @State private var pendingReceiptIsLikely: Bool = true
 
+    // Inline search over the local product catalog.
+    @State private var searchQuery: String = ""
+    @FocusState private var searchFocused: Bool
+
+    private var searchResults: [Product] {
+        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        return Mock.products.values
+            .filter {
+                $0.name.lowercased().contains(q)
+                || $0.brand.lowercased().contains(q)
+                || $0.category.lowercased().contains(q)
+            }
+            .sorted { $0.score > $1.score }
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -41,13 +57,23 @@ struct ScanView: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
 
-            VStack {
+            VStack(spacing: 0) {
                 topChrome
                     .padding(.top, 50)
+                searchBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                if !searchResults.isEmpty || searchFocused {
+                    searchResultsList
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
                 Spacer()
             }
 
-            reticle
+            if searchResults.isEmpty && !searchFocused {
+                reticle
+            }
 
             // Status / hint + bottom controls.
             VStack {
@@ -154,11 +180,99 @@ struct ScanView: View {
         .padding(.horizontal, 16)
     }
 
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            IconSearch(size: 14).foregroundStyle(.white.opacity(0.75))
+            ZStack(alignment: .leading) {
+                if searchQuery.isEmpty {
+                    Text("Search products, brands, categories")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                TextField("", text: $searchQuery)
+                    .focused($searchFocused)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white)
+                    .tint(.white)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.search)
+            }
+            if !searchQuery.isEmpty {
+                Button { searchQuery = ""; searchFocused = false } label: {
+                    IconX(size: 12).foregroundStyle(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            Capsule().fill(Color.black.opacity(0.55))
+                .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
+        )
+    }
+
+    private var searchResultsList: some View {
+        VStack(spacing: 0) {
+            if searchResults.isEmpty {
+                Text("No matches — try \"tofu\", \"beef\", \"lentils\"…")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+            } else {
+                ForEach(Array(searchResults.enumerated()), id: \.element.id) { idx, p in
+                    Button {
+                        searchFocused = false
+                        camera.stop()
+                        router.push(.scanResult(pid: p.id))
+                    } label: {
+                        HStack(spacing: 12) {
+                            ProductThumb(pid: p.id, size: 44, imageURL: p.imageURL)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(p.name)
+                                    .font(.system(size: 13.5, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                Text("\(p.brand) · \(p.origin.split(separator: "·").first.map { $0.trimmingCharacters(in: .whitespaces) } ?? p.origin)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.white.opacity(0.65))
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 6)
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text("+\(Int(Double(p.score) * 1.6))")
+                                    .font(.mono(12, weight: .semibold))
+                                    .foregroundStyle(Color(hex: 0x9FE6B1))
+                                Text("\(p.score) · \(Score.label(p.score))")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                    }
+                    .buttonStyle(.plain)
+                    if idx < searchResults.count - 1 {
+                        Color.white.opacity(0.08).frame(height: 1)
+                    }
+                }
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.black.opacity(0.72))
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1))
+        )
+    }
+
     private func titleForMode(_ mode: ScanMode) -> String {
         switch mode {
         case .product: return "SCAN ITEM"
         case .receipt: return "SCAN RECEIPT"
-        case .recycle: return "SCAN RECYCLING"
         }
     }
 
@@ -174,7 +288,9 @@ struct ScanView: View {
     }
 
     private var reticle: some View {
-        let size: CGFloat = router.scanMode == .product ? 240 : 300
+        let isReceipt = router.scanMode == .receipt
+        let w: CGFloat = isReceipt ? 260 : 240
+        let h: CGFloat = isReceipt ? 440 : 240
         return ZStack {
             reticleCorners
             if processing {
@@ -183,7 +299,7 @@ struct ScanView: View {
                     .shadow(color: Color(hex: 0x6FCBE4).opacity(0.6), radius: 18)
             }
         }
-        .frame(width: 240, height: size)
+        .frame(width: w, height: h)
     }
 
     private var reticleCorners: some View {
@@ -282,7 +398,6 @@ struct ScanView: View {
         switch mode {
         case .product: return "Center the barcode in frame"
         case .receipt: return "Hold the receipt flat and tap the shutter"
-        case .recycle: return "Frame the recycling and tap the shutter"
         }
     }
 
@@ -291,7 +406,6 @@ struct ScanView: View {
             HStack(spacing: 24) {
                 modeTab(title: "Item",    mode: .product)
                 modeTab(title: "Receipt", mode: .receipt)
-                modeTab(title: "Recycle", mode: .recycle)
             }
             Button {
                 handleShutter()
@@ -381,9 +495,6 @@ struct ScanView: View {
             Task { await captureLabel() }
         case .receipt:
             Task { await captureReceipt() }
-        case .recycle:
-            // Not part of the MVP — just bounce back.
-            router.pop()
         }
     }
 

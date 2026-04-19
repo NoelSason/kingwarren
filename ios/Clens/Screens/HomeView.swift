@@ -2,22 +2,61 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var router: AppRouter
+    @EnvironmentObject var profileService: ProfileService
     @State private var posts: [SocialPost] = SocialPost.sample
+    @State private var showBonusInfo = false
+
+    private var seabucks: Int {
+        profileService.balance
+    }
+
+    private var oceanPlainLanguage: String {
+        let stress = Mock.oceanToday.stressIndex
+        if stress >= 1.25 {
+            return "Ocean conditions are stressed today — runoff-heavy picks (beef, dairy, processed) cost you more seabucks."
+        }
+        if stress >= 1.10 {
+            return "Ocean conditions are slightly elevated — low-runoff produce earns a small bonus today."
+        }
+        return "Ocean conditions are calm today — scoring is close to baseline."
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 screenHeader
-                oceanHeroCard.padding(.horizontal, 16).padding(.top, 6)
+                earnedTodayRow.padding(.horizontal, 20).padding(.top, 6)
+                oceanHeroCard.padding(.horizontal, 16).padding(.top, 14)
                 bonusNudgeRow.padding(.horizontal, 16).padding(.top, 10)
                 friendsSection
-                whatIfSection
-                Spacer().frame(height: 40)
             }
-            .padding(.top, 50)
-            .padding(.bottom, 110)
+            .padding(.top, 24)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
+        .refreshable {
+            if let userID = router.session?.userID {
+                await profileService.load(userID: userID)
+            }
+        }
+        .sheet(isPresented: $showBonusInfo) {
+            BonusInfoSheet()
+                .presentationDetents([.medium])
+        }
+    }
+
+    // MARK: earned today — quick at-a-glance line
+
+    private var earnedTodayRow: some View {
+        HStack(spacing: 8) {
+            IconWave(size: 14).foregroundStyle(Color.ocean)
+            (Text("\(seabucks.formatted())").font(.system(size: 13, weight: .semibold))
+             + Text(" seabucks · ").font(.system(size: 13))
+             + Text("+\(Mock.receipt.earned) today").font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color.kelp))
+            .foregroundStyle(Color.ink2)
+            Spacer(minLength: 0)
+        }
     }
 
     // MARK: header
@@ -93,18 +132,11 @@ struct HomeView: View {
                     .foregroundStyle(.white)
                     .padding(.top, 4)
 
-                Text(String(format: "Your lifestyle after ocean scoring — runoff-heavy picks penalized %.2f×", Mock.oceanToday.stressIndex))
+                Text(oceanPlainLanguage)
                     .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(.white.opacity(0.85))
                     .lineSpacing(2)
-                    .padding(.top, 5)
-
-                HStack(spacing: 8) {
-                    OceanChip(label: "pH \(Mock.oceanToday.pH)")
-                    OceanChip(label: "O\u{2082} \(Mock.oceanToday.dissolvedO2)")
-                    OceanChip(label: "Chl \(Mock.oceanToday.chlorophyll)")
-                }
-                .padding(.top, 12)
+                    .padding(.top, 6)
             }
             .padding(18)
         }
@@ -116,16 +148,21 @@ struct HomeView: View {
 
     private var bonusNudgeRow: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 6) {
-                IconBolt(size: 12).foregroundStyle(Color(hex: 0xFFF7E8))
-                Text(Mock.oceanToday.alert)
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .tracking(0.3)
-                    .foregroundStyle(Color(hex: 0xFFF7E8))
+            Button { showBonusInfo = true } label: {
+                HStack(spacing: 6) {
+                    IconBolt(size: 12).foregroundStyle(Color(hex: 0xFFF7E8))
+                    Text(Mock.oceanToday.alert)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .tracking(0.3)
+                        .foregroundStyle(Color(hex: 0xFFF7E8))
+                    IconChevR(size: 10).foregroundStyle(Color(hex: 0xFFF7E8).opacity(0.7))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color(hex: 0x3F2E08)))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(Color(hex: 0x3F2E08)))
+            .buttonStyle(.plain)
+            .accessibilityLabel("Learn about the 2× seabucks bonus")
 
             Text("· \(Mock.oceanToday.updated)")
                 .font(.system(size: 12))
@@ -138,7 +175,7 @@ struct HomeView: View {
 
     private var friendsSection: some View {
         VStack(spacing: 0) {
-            SectionHeader(title: "Friends' scans")
+            SectionHeader(title: "Friends' purchases")
             VStack(spacing: 12) {
                 ForEach(posts) { post in
                     SocialPostCard(
@@ -164,51 +201,6 @@ struct HomeView: View {
         posts[i].saved.toggle()
     }
 
-    // MARK: what-if
-
-    private var whatIfSection: some View {
-        VStack(spacing: 0) {
-            SectionHeader(title: "What if you had...")
-            Button {
-                router.push(.swap(pid: "beef"))
-            } label: {
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        ProductThumb(pid: "beef", size: 48)
-                        IconSwap(size: 14).foregroundStyle(Color.ink3)
-                        ProductThumb(pid: "lentils", size: 48)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("+220 PTS MISSED")
-                            .font(.system(size: 11, weight: .semibold))
-                            .tracking(1.5)
-                            .foregroundStyle(Color.coral)
-                        Text("Swap beef → lentils to catch the 2× runoff bonus")
-                            .font(.system(size: 13.5, weight: .semibold))
-                            .multilineTextAlignment(.leading)
-                            .foregroundStyle(Color.ink)
-                            .lineSpacing(1)
-                        Text("Direct hit on today's algal bloom driver.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.ink2)
-                    }
-                    Spacer(minLength: 0)
-                    IconChevR(size: 18).foregroundStyle(Color.ink3)
-                }
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.hair, lineWidth: 1)
-                        )
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-        }
-    }
 }
 
 // MARK: - Social feed
@@ -235,7 +227,7 @@ struct SocialPost: Identifiable {
             avatarBg: Color.ocean,
             store: "Whole Foods Mar…", time: "2h ago",
             pid: "tofu", productName: "Organic Firm Tofu",
-            caption: "+State – Smart pick. Green beef, meet full protein with less footprint.",
+            caption: "Smart swap — full protein with a fraction of the footprint.",
             score: 82, likes: 31, saves: 4, liked: false, saved: false
         ),
         SocialPost(
@@ -243,7 +235,7 @@ struct SocialPost: Identifiable {
             avatarBg: Color.kelp,
             store: "Trader Joe's UTC", time: "5h ago",
             pid: "lentils", productName: "Green Lentils, Bulk",
-            caption: "Loves: +58 extra bucks – Locally grown nitrogen-fixing crop hit today's 2× runoff bonus.",
+            caption: "+58 extra seabucks — locally grown nitrogen-fixing crop hit today's 2× runoff bonus.",
             score: 94, likes: 58, saves: 12, liked: true, saved: false
         ),
     ]
@@ -278,12 +270,17 @@ private struct SocialPostCard: View {
             .padding(.horizontal, 14)
             .padding(.top, 12)
 
-            // Product image strip
+            // Product image
             Button(action: onOpen) {
                 ZStack {
-                    PostStripe(pid: post.pid)
+                    ProductThumb(
+                        pid: post.pid,
+                        size: 160,
+                        imageURL: Mock.products[post.pid]?.imageURL
+                    )
+                    .frame(maxWidth: .infinity)
                     LinearGradient(
-                        colors: [.white.opacity(0.05), .black.opacity(0.3)],
+                        colors: [.black.opacity(0.0), .black.opacity(0.25)],
                         startPoint: .top, endPoint: .bottom
                     )
                     Text(post.productName)
@@ -304,6 +301,7 @@ private struct SocialPostCard: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 }
                 .frame(height: 160)
+                .frame(maxWidth: .infinity)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -369,54 +367,57 @@ private struct SocialPostCard: View {
     }
 }
 
-// MARK: - Full-width diagonal-stripe banner (keyed off product id)
+// MARK: - Bonus info sheet
 
-private struct PostStripe: View {
-    let pid: String
-
-    private var seed: (Color, Color) {
-        switch pid {
-        case "monster": return (Color(hex: 0x0E2216), Color(hex: 0x3A5A40))
-        case "avocado": return (Color(hex: 0x4F6F3B), Color(hex: 0x87A97A))
-        case "beef":    return (Color(hex: 0x6B2D1F), Color(hex: 0xA14B35))
-        case "oats":    return (Color(hex: 0xBFA67A), Color(hex: 0xE5D8B5))
-        case "lentils": return (Color(hex: 0x5B6E3A), Color(hex: 0x8FA75E))
-        case "tofu":    return (Color(hex: 0xE8E2CC), Color(hex: 0xB9B08A))
-        default:        return (Color(hex: 0xCCCCCC), Color(hex: 0xEEEEEE))
-        }
-    }
+private struct BonusInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        Canvas { ctx, size in
-            let stripe: CGFloat = 12
-            let diag = (size.width + size.height) * 1.5
-            ctx.translateBy(x: -size.width * 0.25, y: -size.height * 0.25)
-            ctx.rotate(by: .degrees(45))
-            var x: CGFloat = -diag
-            var i = 0
-            while x < diag {
-                let c: Color = (i % 2 == 0) ? seed.0 : seed.1
-                let rect = CGRect(x: x, y: -diag, width: stripe, height: diag * 2)
-                ctx.fill(Path(rect), with: .color(c))
-                x += stripe
-                i += 1
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("2× seabucks today")
+                    .font(.serif(24))
+                Spacer()
+                Button { dismiss() } label: {
+                    ZStack {
+                        Circle().fill(Color.fill1).frame(width: 30, height: 30)
+                        Text("✕").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.ink2)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close")
             }
+            .padding(.bottom, 6)
+
+            Text("Low-runoff produce earns double seabucks while marine conditions are elevated.")
+                .font(.system(size: 14))
+                .foregroundStyle(Color.ink2)
+                .lineSpacing(3)
+                .padding(.bottom, 18)
+
+            VStack(alignment: .leading, spacing: 12) {
+                bullet("Leafy greens — spinach, kale, chard, romaine.")
+                bullet("Root vegetables — carrots, beets, potatoes, onions.")
+                bullet("Legumes — lentils, beans, chickpeas, peas.")
+                bullet("Bonus doubles the seabucks for qualifying items until ocean stress normalizes.")
+            }
+
+            Spacer(minLength: 16)
         }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.bg.ignoresSafeArea())
     }
-}
 
-// MARK: - Ocean conditions chip (frosted)
-
-private struct OceanChip: View {
-    let label: String
-    var body: some View {
-        Text(label)
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(0.3)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 3)
-            .background(Capsule().fill(Color.white.opacity(0.18)))
+    private func bullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(Color.kelp).frame(width: 6, height: 6).padding(.top, 7)
+            Text(text)
+                .font(.system(size: 13.5))
+                .foregroundStyle(Color.ink)
+                .lineSpacing(3)
+            Spacer(minLength: 0)
+        }
     }
 }
 

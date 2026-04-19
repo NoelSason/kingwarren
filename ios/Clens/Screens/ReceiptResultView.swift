@@ -11,7 +11,7 @@ struct ReceiptResultView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                topBar.padding(.horizontal, 16).padding(.top, 50)
+                topBar.padding(.horizontal, 16).padding(.top, 24)
 
                 if parsing {
                     parsingState
@@ -30,10 +30,9 @@ struct ReceiptResultView: View {
                         swapsList
                     }
 
-                    Spacer().frame(height: 30)
                 }
             }
-            .padding(.bottom, 110)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
         .onAppear {
@@ -113,7 +112,7 @@ struct ReceiptResultView: View {
                 Text("+\(receipt.earned)")
                     .font(.serif(42))
                     .foregroundStyle(.white)
-                Text("sea bucks · \(receipt.items.count) items · $\(String(format: "%.2f", receipt.total))")
+                Text("seabucks · \(receipt.items.count) items · $\(String(format: "%.2f", receipt.total))")
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.8))
             }
@@ -191,7 +190,7 @@ struct ReceiptResultView: View {
 
     private var swapsHeaderTrailing: String {
         let total = receipt.swaps.map { max(0, $0.deltaPoints) }.reduce(0, +)
-        return "+\(total) sea bucks possible"
+        return "+\(total) seabucks possible"
     }
 }
 
@@ -241,7 +240,7 @@ private struct SwapRow: View {
         let score = swap.deltaScore
         let ptsSign = pts >= 0 ? "+" : ""
         let scoreSign = score >= 0 ? "+" : ""
-        return "\(ptsSign)\(pts) sea bucks · \(scoreSign)\(score) ocean score"
+        return "\(ptsSign)\(pts) seabucks · \(scoreSign)\(score) green score"
     }
 
     private var deltaColor: Color {

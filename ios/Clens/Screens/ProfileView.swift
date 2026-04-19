@@ -15,13 +15,13 @@ struct ProfileView: View {
         return u.isEmpty ? Mock.warren.handle : "@\(u)"
     }
     private var seabucks: Int {
-        profileService.profile?.seabucks ?? Mock.warren.points
+        profileService.balance
     }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                topBar.padding(.horizontal, 16).padding(.top, 60)
+                topBar.padding(.horizontal, 16).padding(.top, 24)
 
                 identity.padding(.top, 12)
 
@@ -34,11 +34,15 @@ struct ProfileView: View {
                 SectionHeader(title: "Account")
                 accountMenu
 
-                Spacer().frame(height: 30)
             }
-            .padding(.bottom, 110)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
+        .refreshable {
+            if let userID = router.session?.userID {
+                await profileService.load(userID: userID)
+            }
+        }
     }
 
     private var topBar: some View {
@@ -99,7 +103,7 @@ struct ProfileView: View {
         HStack(spacing: 8) {
             StatTile(label: "SeaBucks",
                      value: "\(seabucks)",
-                     sub: "points earned")
+                     sub: "seabucks earned")
             StatTile(label: "Plastic",
                      value: String(format: "%.1f kg", Mock.warren.lifetimePlastic),
                      sub: "avoided")
@@ -118,7 +122,7 @@ struct ProfileView: View {
             Text("Meat-leaning · low-waste")
                 .font(.serif(22))
                 .padding(.top, 4)
-            Text("Your basket averages high on fresh produce and bulk bins, but meat purchases pull your score down by ~22 points.")
+            Text("Your basket averages high on fresh produce and bulk bins, but meat purchases pull your score down by ~22 seabucks.")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.ink2)
                 .padding(.top, 6)
@@ -171,6 +175,10 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             MenuRow(icon: AnyView(IconReceipt(size: 18)), title: "Scan history") {
                 router.push(.scanHistory)
+            }
+            Color.hair.frame(height: 1)
+            MenuRow(icon: AnyView(IconWave(size: 18)), title: "My rewards") {
+                router.push(.myRewards)
             }
             Color.hair.frame(height: 1)
             MenuRow(icon: AnyView(IconLeaf(size: 18)), title: "Preferences (diet, budget)")

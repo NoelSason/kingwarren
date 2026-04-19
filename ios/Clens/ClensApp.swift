@@ -27,7 +27,13 @@ struct ClensApp: App {
                 .environmentObject(profileService)
                 .preferredColorScheme(darkMode ? .dark : .light)
                 .task(id: router.session?.userID) {
-                    guard let session = router.session else { return }
+                    guard let session = router.session else {
+                        coordinator.session = nil
+                        return
+                    }
+                    // Let ScanCoordinator persist scans + bump seabucks in Supabase.
+                    coordinator.session = session
+                    coordinator.profileService = profileService
                     // Load profile from Databricks
                     await profileService.load(userID: session.userID)
                     // Wire and refresh ocean stress from Flask

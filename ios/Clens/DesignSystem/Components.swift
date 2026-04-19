@@ -1,5 +1,44 @@
 import SwiftUI
+import UIKit
 import Charts
+import CoreImage
+import CoreImage.CIFilterBuiltins
+
+// MARK: - Code128 barcode renderer
+
+struct BarcodeImage: View {
+    let code: String
+    var height: CGFloat = 70
+
+    private static let context = CIContext()
+
+    private var image: UIImage? {
+        let filter = CIFilter.code128BarcodeGenerator()
+        filter.message = Data(code.utf8)
+        filter.quietSpace = 7
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 3, y: 3))
+        guard let cg = Self.context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cg)
+    }
+
+    var body: some View {
+        Group {
+            if let img = image {
+                Image(uiImage: img)
+                    .resizable()
+                    .interpolation(.none)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: height)
+            } else {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.fill1)
+                    .frame(height: height)
+                    .overlay(Text("No code").font(.system(size: 11)).foregroundStyle(Color.ink3))
+            }
+        }
+    }
+}
 
 // MARK: - Pill
 
@@ -386,7 +425,7 @@ struct OriginChartsCard: View {
     private var scoresPanel: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("RECENT SCANS · OCEAN SCORE")
+                Text("RECENT SCANS · GREEN SCORE")
                     .font(.system(size: 10, weight: .semibold))
                     .tracking(1.4)
                     .foregroundStyle(Color.ink3)

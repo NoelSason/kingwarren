@@ -36,6 +36,8 @@ struct RootView: View {
                 ReceiptResultView()
             case .scanHistory:
                 ScanHistoryView()
+            case .myRewards:
+                ClaimedRewardsView()
             }
         } else {
             switch router.tab {

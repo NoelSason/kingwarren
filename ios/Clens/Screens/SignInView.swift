@@ -21,7 +21,7 @@ struct SignInView: View {
                     .font(.serif(56))
                     .foregroundStyle(Color.ink)
                     .padding(.top, 70)
-                Text("OCEAN SCORE · SEA BUCKS")
+                Text("GREEN SCORE · SEABUCKS")
                     .font(.system(size: 12))
                     .tracking(2)
                     .foregroundStyle(Color.ink3)

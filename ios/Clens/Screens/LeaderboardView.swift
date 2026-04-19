@@ -19,7 +19,7 @@ struct LeaderboardView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                header.padding(.horizontal, 20).padding(.top, 60)
+                header.padding(.horizontal, 20).padding(.top, 24)
 
                 scopeSwitch.padding(.horizontal, 16).padding(.top, 14)
 
@@ -32,12 +32,8 @@ struct LeaderboardView: View {
                     .padding(.top, 4)
                 listCard
 
-                SectionHeader(title: "Perks by rank")
-                perks.padding(.horizontal, 16)
-
-                Spacer().frame(height: 30)
             }
-            .padding(.bottom, 110)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
         .onAppear {
@@ -53,9 +49,11 @@ struct LeaderboardView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Leaderboard").font(.serif(32))
-            Text("La Jolla · 92704 · week of Apr 13")
-                .font(.system(size: 13))
-                .foregroundStyle(Color.ink2)
+            if scope != .global {
+                Text("La Jolla · 92704 · week of Apr 13")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.ink2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -90,13 +88,13 @@ struct LeaderboardView: View {
         HStack(alignment: .bottom, spacing: 10) {
             if leaders.count >= 3 {
                 Podium(name: leaders[1].name, pts: leaders[1].pts, rank: 2,
-                       height: 105, color: Color(hex: 0xBFA67A), crown: false, isMe: leaders[1].isMe,
+                       height: 105, color: Color(hex: 0xC0C0C0), crown: false, isMe: leaders[1].isMe,
                        progress: podiumProgress, riseDelay: 0.12)
                 Podium(name: leaders[0].name, pts: leaders[0].pts, rank: 1,
                        height: 140, color: Color(hex: 0xE3C96A), crown: true, isMe: leaders[0].isMe,
                        progress: podiumProgress, riseDelay: 0.0)
                 Podium(name: leaders[2].name, pts: leaders[2].pts, rank: 3,
-                       height: 85, color: Color(hex: 0xD89A72), crown: false, isMe: leaders[2].isMe,
+                       height: 85, color: Color(hex: 0xCD7F32), crown: false, isMe: leaders[2].isMe,
                        progress: podiumProgress, riseDelay: 0.2)
             }
         }
@@ -141,14 +139,6 @@ struct LeaderboardView: View {
                 )
         )
         .padding(.horizontal, 16)
-    }
-
-    private var perks: some View {
-        VStack(spacing: 6) {
-            RankPerk(rank: "Top 1%", perk: "Seaside weekend giveaway entry", earned: true)
-            RankPerk(rank: "Top 10%", perk: "2× sea bucks on weekends", earned: true)
-            RankPerk(rank: "Top 25%", perk: "Early access to new rewards", earned: false)
-        }
     }
 
     private func initials(for name: String) -> String {
@@ -215,41 +205,3 @@ private struct Podium: View {
     }
 }
 
-private struct RankPerk: View {
-    let rank: String
-    let perk: String
-    let earned: Bool
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(earned ? Color.kelp : Color.fill1)
-                if earned {
-                    IconCheck(size: 16).foregroundStyle(.white)
-                } else {
-                    IconShield(size: 16).foregroundStyle(Color.ink3)
-                }
-            }
-            .frame(width: 30, height: 30)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(perk).font(.system(size: 13, weight: .semibold))
-                Text("\(rank) · \(earned ? "Unlocked" : "Locked")")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.ink3)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.hair, lineWidth: 1)
-                )
-        )
-    }
-}

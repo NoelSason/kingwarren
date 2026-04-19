@@ -50,20 +50,17 @@ struct ScanResultView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
 
-                SectionHeader(title: "Known facts")
-                factsList(p)
-
-                if let _ = Mock.swaps[pid] {
-                    SectionHeader(title: "What if you...")
-                    swapCTA(p)
+                if let swap = Mock.swaps[pid] {
+                    SectionHeader(title: "What if you swapped…")
+                    swapCTA(p, swap: swap)
+                    swapProsConsCard(swap)
                 }
 
                 SectionHeader(title: "Origin")
                 OriginChartsCard()
 
-                Spacer().frame(height: 30)
             }
-            .padding(.bottom, 110)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
     }
@@ -117,7 +114,7 @@ struct ScanResultView: View {
         HStack(spacing: 16) {
             ScoreDial(score: p.score, size: 92)
             VStack(alignment: .leading, spacing: 4) {
-                Text("OCEAN SCORE")
+                Text("GREEN SCORE")
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(1.5)
                     .foregroundStyle(Color.ink3)
@@ -125,7 +122,7 @@ struct ScanResultView: View {
                     .font(.serif(22))
                     .foregroundStyle(color)
                 (Text("Earns ").font(.system(size: 12.5))
-                 + Text("\(Int(Double(p.score) * 1.6)) sea bucks").font(.system(size: 12.5, weight: .bold))
+                 + Text("\(Int(Double(p.score) * 1.6)) seabucks").font(.system(size: 12.5, weight: .bold))
                  + Text(" at checkout.").font(.system(size: 12.5)))
                     .foregroundStyle(Color.ink2)
                     .lineSpacing(2)
@@ -199,31 +196,8 @@ struct ScanResultView: View {
         )
     }
 
-    private func factsList(_ p: Product) -> some View {
-        VStack(spacing: 6) {
-            ForEach(p.facts, id: \.self) { f in
-                HStack(alignment: .top, spacing: 10) {
-                    Circle().fill(Color.ink).frame(width: 6, height: 6).padding(.top, 6)
-                    Text(f).font(.system(size: 13)).foregroundStyle(Color.ink)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.hair, lineWidth: 1)
-                        )
-                )
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-
-    private func swapCTA(_ p: Product) -> some View {
-        let swap = Mock.swaps[pid]!
+    private func swapCTA(_ p: Product, swap: Swap) -> some View {
+        let toProduct = Mock.products[swap.to]
         return Button {
             router.push(.swap(pid: pid))
         } label: {
@@ -231,7 +205,7 @@ struct ScanResultView: View {
                 HStack(spacing: 4) {
                     ProductThumb(pid: pid, size: 42, imageURL: p.imageURL)
                     IconSwap(size: 16).foregroundStyle(.white.opacity(0.6))
-                    ProductThumb(pid: swap.to, size: 42)
+                    ProductThumb(pid: swap.to, size: 42, imageURL: toProduct?.imageURL)
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text("SWAP TO")
@@ -241,7 +215,7 @@ struct ScanResultView: View {
                     Text(swap.altName)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text("+\(swap.deltaPoints) pts · +\(swap.deltaScore) score")
+                    Text("+\(swap.deltaPoints) seabucks · +\(swap.deltaScore) score")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color(hex: 0xFFB89F))
                 }
@@ -255,5 +229,52 @@ struct ScanResultView: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
+    }
+
+    private func swapProsConsCard(_ swap: Swap) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("PROS")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundStyle(Color.kelp)
+                ForEach(swap.pros, id: \.self) { p in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("+").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.kelp)
+                        Text(p).font(.system(size: 12.5)).foregroundStyle(Color.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Color.hair.frame(width: 1).padding(.horizontal, 10)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("CONS")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundStyle(Color.ink3)
+                ForEach(swap.cons, id: \.self) { c in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("–").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.ink3)
+                        Text(c).font(.system(size: 12.5)).foregroundStyle(Color.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.hair, lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
     }
 }

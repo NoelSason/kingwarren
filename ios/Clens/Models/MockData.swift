@@ -23,7 +23,7 @@ enum Mock {
         dissolvedO2: "-12%",
         headline: "Elevated algal bloom signal",
         detail: "Runoff-driven chlorophyll is 38% above seasonal mean. Low-fertilizer products earn 2× this week.",
-        alert: "2× points on low-runoff produce"
+        alert: "2× seabucks on low-runoff produce"
     )
 
     static let products: [String: Product] = [
@@ -164,14 +164,30 @@ enum Mock {
         )
     ]
 
-    static let rewards: [Reward] = [
-        Reward(brand: "Patagonia Provisions", title: "$15 off smoked mussels", cost: 4_000, tag: "Ocean-positive", featured: true),
-        Reward(brand: "Blue Apron", title: "Free low-carbon box", cost: 9_500, tag: "Plant-forward", featured: false),
-        Reward(brand: "Ridwell", title: "3 months pickup", cost: 7_200, tag: "Plastic", featured: false),
-        Reward(brand: "REI Co-op", title: "$20 gift card", cost: 12_000, tag: "Outdoors", featured: false),
-        Reward(brand: "Imperfect Foods", title: "20% off first box", cost: 2_800, tag: "Food waste", featured: false),
-        Reward(brand: "Clens", title: "Seaside weekend giveaway entry", cost: 500, tag: "Raffle", featured: false)
-    ]
+    static let rewards: [Reward] = buildRewards()
+
+    private static func buildRewards() -> [Reward] {
+        var r: [Reward] = []
+        r.append(Reward(brand: "Ralphs", title: "10% off bananas", cost: 200, tag: "Produce", featured: false, store: "Ralphs", barcode: "9001234567890"))
+        r.append(Reward(brand: "Trader Joe's", title: "$1 off any leafy green", cost: 300, tag: "Produce", featured: false, store: "Trader Joe's", barcode: "9002345678901"))
+        r.append(Reward(brand: "Sprouts", title: "15% off bulk lentils", cost: 500, tag: "Legumes", featured: true, store: "Sprouts", barcode: "9003456789012"))
+        r.append(Reward(brand: "Vons", title: "$2 off organic carrots", cost: 400, tag: "Produce", featured: false, store: "Vons", barcode: "9004567890123"))
+        r.append(Reward(brand: "Whole Foods", title: "$5 off $25 produce", cost: 1_500, tag: "Produce", featured: false, store: "Whole Foods", barcode: "9005678901234"))
+        r.append(Reward(brand: "Ralphs", title: "Buy-one-get-one kale", cost: 600, tag: "Greens", featured: false, store: "Ralphs", barcode: "9006789012345"))
+        r.append(Reward(brand: "Trader Joe's", title: "Free organic tofu", cost: 800, tag: "Plant protein", featured: false, store: "Trader Joe's", barcode: "9007890123456"))
+        r.append(Reward(brand: "Sprouts", title: "20% off bulk oats", cost: 450, tag: "Grains", featured: false, store: "Sprouts", barcode: "9008901234567"))
+        r.append(Reward(brand: "Whole Foods", title: "$3 off bulk beans", cost: 700, tag: "Legumes", featured: false, store: "Whole Foods", barcode: "9009012345678"))
+        r.append(Reward(brand: "Vons", title: "10% off fresh spinach", cost: 350, tag: "Greens", featured: false, store: "Vons", barcode: "9010123456789"))
+        r.append(Reward(brand: "Ralphs", title: "$1 off chickpeas", cost: 250, tag: "Legumes", featured: false, store: "Ralphs", barcode: "9011234567890"))
+        r.append(Reward(brand: "Trader Joe's", title: "$2 off sweet potatoes", cost: 500, tag: "Roots", featured: false, store: "Trader Joe's", barcode: "9012345678901"))
+        r.append(Reward(brand: "Sprouts", title: "$5 off organic produce $20+", cost: 1_200, tag: "Produce", featured: false, store: "Sprouts", barcode: "9013456789012"))
+        r.append(Reward(brand: "Whole Foods", title: "15% off grain bowls", cost: 900, tag: "Prepared", featured: false, store: "Whole Foods", barcode: "9014567890123"))
+        r.append(Reward(brand: "Vons", title: "$1 off onions or garlic", cost: 200, tag: "Roots", featured: false, store: "Vons", barcode: "9015678901234"))
+        r.append(Reward(brand: "Ralphs", title: "$3 off $15 bulk foods", cost: 850, tag: "Bulk", featured: false, store: "Ralphs", barcode: "9016789012345"))
+        r.append(Reward(brand: "Trader Joe's", title: "$5 off $25 plant-based", cost: 1_400, tag: "Plant-based", featured: false, store: "Trader Joe's", barcode: "9017890123456"))
+        r.append(Reward(brand: "Sprouts", title: "Free reusable bag w/ $40", cost: 600, tag: "Bring your own", featured: false, store: "Sprouts", barcode: "9018901234567"))
+        return r
+    }
 
     static let leaders: [Leader] = [
         Leader(name: "Mira K.", rank: 1, pts: 18_902, area: "La Jolla", tag: "Reef Guardian", isMe: false),

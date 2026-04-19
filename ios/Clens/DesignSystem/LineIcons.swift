@@ -81,10 +81,15 @@ struct IconTrophy: View {
     var size: CGFloat = 24
     var body: some View {
         icon(size) { p in
+            // Base
             p.move(to: CGPoint(x: 8, y: 21))
             p.addLine(to: CGPoint(x: 16, y: 21))
-            p.move(to: CGPoint(x: 12, y: 17))
+            // Stem/handle connecting cup bottom to base plate
+            p.move(to: CGPoint(x: 12, y: 11))
             p.addLine(to: CGPoint(x: 12, y: 21))
+            // Base plate
+            p.move(to: CGPoint(x: 10, y: 17))
+            p.addLine(to: CGPoint(x: 14, y: 17))
             // Cup body
             p.move(to: CGPoint(x: 7, y: 4))
             p.addLine(to: CGPoint(x: 17, y: 4))
@@ -92,7 +97,7 @@ struct IconTrophy: View {
             p.addCurve(to: CGPoint(x: 7, y: 8),
                        control1: CGPoint(x: 17, y: 11), control2: CGPoint(x: 7, y: 11))
             p.closeSubpath()
-            // Side handles
+            // Side handles (wings)
             p.move(to: CGPoint(x: 17, y: 5))
             p.addLine(to: CGPoint(x: 20, y: 5))
             p.addLine(to: CGPoint(x: 20, y: 7))
@@ -111,10 +116,13 @@ struct IconUser: View {
     var size: CGFloat = 24
     var body: some View {
         icon(size) { p in
+            // Head (centered on x=12)
             p.addEllipse(in: CGRect(x: 8, y: 4, width: 8, height: 8))
+            // Symmetric rounded shoulders — mirrored control points
             p.move(to: CGPoint(x: 4, y: 21))
             p.addCurve(to: CGPoint(x: 20, y: 21),
-                       control1: CGPoint(x: 4, y: 16.6), control2: CGPoint(x: 12, y: 13))
+                       control1: CGPoint(x: 4, y: 14),
+                       control2: CGPoint(x: 20, y: 14))
         }
     }
 }

@@ -45,3 +45,52 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
+
+create table if not exists public.scans (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.profiles (id) on delete cascade,
+    store text not null default '',
+    total numeric(10,2) not null default 0,
+    ocean_score int not null default 0,
+    seabucks_earned int not null default 0,
+    item_count int not null default 0,
+    items jsonb not null default '[]'::jsonb,
+    created_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.scans enable row level security;
+
+create policy "users_can_insert_own_scans"
+on public.scans
+for insert
+with check (auth.uid() = user_id);
+
+create policy "users_can_read_own_scans"
+on public.scans
+for select
+using (auth.uid() = user_id);
+
+create index if not exists scans_user_id_created_at_idx
+    on public.scans (user_id, created_at desc);
+
+create or replace function public.add_seabucks(amount int)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    new_balance int;
+begin
+    if auth.uid() is null then
+        raise exception 'not authenticated';
+    end if;
+    update public.profiles
+    set seabucks = seabucks + amount
+    where id = auth.uid()
+    returning seabucks into new_balance;
+    return new_balance;
+end;
+$$;
+
+grant execute on function public.add_seabucks(int) to authenticated;

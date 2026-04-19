@@ -5,7 +5,7 @@ enum Tab: String, CaseIterable, Hashable {
 }
 
 enum ScanMode: String, Hashable {
-    case product, receipt, recycle
+    case product, receipt
 }
 
 enum Route: Hashable {
@@ -14,6 +14,7 @@ enum Route: Hashable {
     case swap(pid: String)
     case receipt
     case scanHistory
+    case myRewards
 }
 
 @MainActor

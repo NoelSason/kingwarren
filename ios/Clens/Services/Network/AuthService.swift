@@ -105,6 +105,8 @@ final class AuthService {
         let resolvedUsername = (meta["username"] as? String) ?? username
         let resolvedDisplayName = (meta["display_name"] as? String) ?? displayName
 
+        SupabaseClient.shared.setAccessToken(accessToken)
+
         return AuthSession(
             accessToken: accessToken,
             refreshToken: refreshToken,

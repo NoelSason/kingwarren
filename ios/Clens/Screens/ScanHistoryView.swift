@@ -7,7 +7,7 @@ struct ScanHistoryView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 12) {
-                header.padding(.horizontal, 16).padding(.top, 60)
+                header.padding(.horizontal, 16).padding(.top, 24)
 
                 if history.records.isEmpty {
                     emptyState.padding(.top, 40)
@@ -23,9 +23,8 @@ struct ScanHistoryView: View {
                         .padding(.top, 8)
                 }
 
-                Spacer().frame(height: 40)
             }
-            .padding(.bottom, 110)
+            .padding(.bottom, 96)
         }
         .background(Color.bg.ignoresSafeArea())
         .task { await history.refresh() }
@@ -91,7 +90,7 @@ struct ScanHistoryView: View {
                 Text("\(r.score)")
                     .font(.serif(20))
                     .foregroundStyle(Score.color(r.score))
-                Text("+\(r.points) pts")
+                Text("+\(r.points) seabucks")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color.kelp)
             }

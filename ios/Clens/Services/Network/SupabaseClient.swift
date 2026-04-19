@@ -11,6 +11,8 @@ final class SupabaseClient: @unchecked Sendable {
     let baseURL: URL?
     let anonKey: String?
     private let session: URLSession
+    private let tokenLock = NSLock()
+    private var _accessToken: String?
 
     private init() {
         let info = Bundle.main.infoDictionary ?? [:]
@@ -26,9 +28,31 @@ final class SupabaseClient: @unchecked Sendable {
 
     var isConfigured: Bool { baseURL != nil && anonKey != nil }
 
-    // User identity is not wired yet — teammates can plug Supabase Auth in
-    // here and return the current JWT. Until then we send only the anon key.
-    func currentAccessToken() -> String? { nil }
+    func setAccessToken(_ token: String?) {
+        tokenLock.lock(); defer { tokenLock.unlock() }
+        _accessToken = token
+    }
+
+    func currentAccessToken() -> String? {
+        tokenLock.lock(); defer { tokenLock.unlock() }
+        return _accessToken
+    }
+
+    // Reads the signed-in user's row from public.profiles. RLS scopes the
+    // query to auth.uid(), so the explicit id filter is defensive only.
+    func fetchCurrentUserProfile() async throws -> DatabricksProfile {
+        let rows: [DatabricksProfile] = try await get(
+            "rest/v1/profiles",
+            query: [URLQueryItem(
+                name: "select",
+                value: "id,display_name,username,email,seabucks,created_at"
+            )]
+        )
+        guard let first = rows.first else {
+            throw SupabaseError.http(status: 404, body: "profile not found")
+        }
+        return first
+    }
 
     // MARK: - Low-level REST
 

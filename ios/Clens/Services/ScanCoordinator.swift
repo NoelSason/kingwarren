@@ -31,6 +31,11 @@ final class ScanCoordinator: ObservableObject {
     let ocean: OceanStressService
     let history: ScanHistoryStore?
 
+    // Set by ClensApp once a session exists so the receipt flow can persist
+    // scans to Supabase and update the in-memory balance in ProfileService.
+    weak var profileService: ProfileService?
+    var session: AuthSession?
+
     init(ocean: OceanStressService, history: ScanHistoryStore? = nil) {
         self.ocean = ocean
         self.history = history
@@ -212,6 +217,7 @@ final class ScanCoordinator: ObservableObject {
                 self.liveReceipt = receipt
                 self.status = .idle
                 history?.log(.receipt(receipt))
+                await syncReceiptToSupabase(receipt)
                 // Fire the swap-suggestion LLM call in the background so the
                 // receipt renders immediately; we re-publish liveReceipt with
                 // swaps filled in once Claude responds.
@@ -233,9 +239,28 @@ final class ScanCoordinator: ObservableObject {
             self.liveReceipt = receipt
             self.status = .idle
             history?.log(.receipt(receipt))
+            await syncReceiptToSupabase(receipt)
         } catch {
             ScanLog.step(30, "receipt OCR FAILED: \(error)")
             self.status = .error("Couldn't read receipt. Try a clearer photo.")
+        }
+    }
+
+    // Writes the scan to Supabase and bumps the signed-in user's seabucks
+    // balance via the add_seabucks RPC. In-memory ProfileService.balance is
+    // updated so Home / Rewards / Profile reflect the new total immediately.
+    // Silent no-op if there's no session or Supabase isn't configured.
+    private func syncReceiptToSupabase(_ receipt: Receipt) async {
+        guard let userID = session?.userID else {
+            ScanLog.step(34, "no session — skipping Supabase scan sync")
+            return
+        }
+        do {
+            let newBalance = try await ScanSyncService.sync(userID: userID, receipt: receipt)
+            ScanLog.step(34, "Supabase scan sync OK: +\(receipt.earned) → new balance=\(newBalance)")
+            profileService?.balance = newBalance
+        } catch {
+            ScanLog.step(34, "Supabase scan sync FAILED: \(error)")
         }
     }
 

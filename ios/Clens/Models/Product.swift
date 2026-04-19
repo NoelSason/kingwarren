@@ -86,6 +86,14 @@ struct Reward: Identifiable, Hashable {
     let cost: Int
     let tag: String
     let featured: Bool
+    let store: String
+    let barcode: String
+}
+
+struct ClaimedReward: Identifiable, Hashable {
+    let id = UUID()
+    let reward: Reward
+    let claimedAt: Date
 }
 
 struct Leader: Identifiable, Hashable {
