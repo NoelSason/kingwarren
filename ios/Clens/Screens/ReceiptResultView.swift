@@ -2,10 +2,11 @@ import SwiftUI
 
 struct ReceiptResultView: View {
     @EnvironmentObject var router: AppRouter
+    @EnvironmentObject var coordinator: ScanCoordinator
     @State private var parsing: Bool = true
     @State private var spin: Bool = false
 
-    private var receipt: Receipt { Mock.receipt }
+    private var receipt: Receipt { coordinator.liveReceipt ?? Mock.receipt }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -124,7 +125,7 @@ struct ReceiptResultView: View {
     private var itemsCard: some View {
         VStack(spacing: 0) {
             ForEach(Array(receipt.items.enumerated()), id: \.element.id) { idx, item in
-                let product = Mock.products[item.pid]
+                let product = coordinator.product(for: item.pid) ?? Mock.products[item.pid]
                 Button {
                     router.push(.scanResult(pid: item.pid))
                 } label: {

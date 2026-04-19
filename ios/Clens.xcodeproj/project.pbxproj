@@ -7,16 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00BD01B7C45A9425EFBD9A52 /* OceanStressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91E5C3E9B395D29DCADE3FC /* OceanStressService.swift */; };
 		0982C5C5091F2032964B1BA9 /* SwapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00CA355780BE4AEFAE5B114 /* SwapView.swift */; };
+		21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */; };
+		297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930E479523DAAAF3D799F363 /* CategoryImpacts.swift */; };
 		2AF8C3D7C467D4CAE11E6A19 /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C21DA047553ED9617E2498C0 /* MockData.swift */; };
+		307A502A14159DA72058A4AB /* LabelScanClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532B4790A59400372AA98278 /* LabelScanClient.swift */; };
+		3713FF8B12B4309DCD017BA1 /* OceanScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */; };
 		45AFDFD59DC42E94652D7013 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E53449B070A0BADA863830 /* Components.swift */; };
+		4CE46F8C3D902681D2CB7B79 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F4C9308DF915186A28BABD /* CameraPreview.swift */; };
 		56BF9DAC1466C31565A41531 /* RewardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5CF6325A26CF5E3559472CA /* RewardsView.swift */; };
 		59125EC7D0CFF82BC5ABF5BA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84ED1B4A021703479E5F0D48 /* HomeView.swift */; };
 		677C62003C6BD9016E89BB86 /* LineIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E9DE1E4AB7B07BFE08CD03 /* LineIcons.swift */; };
 		6BA4D6070B4A7270ED77F3C0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417E5D56C6E07B1E9ECB769E /* RootView.swift */; };
 		710586C15F2AE314BEC94466 /* ScoreDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFECDCDEB63985EF762708BB /* ScoreDial.swift */; };
+		7D206EA64089CEF816FEC2C2 /* ReceiptOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2457722FF98D7777CB321D8 /* ReceiptOCRService.swift */; };
 		828BD4C797DC7C6974EA2748 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6701E187FB389EDF3EE0C11 /* AppRouter.swift */; };
+		85411E500CE92A849EC06B2A /* FoodItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E3FF0D4074B43898B222EB6 /* FoodItem.swift */; };
 		9A55C59CD551E37292793C26 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB46ABFFA55011B6660D991 /* LeaderboardView.swift */; };
+		9F4D5F132A3F12E22915EEBB /* OpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E3B17A5D44813F5CDAEE90 /* OpenFoodFactsClient.swift */; };
 		A0BE9D2ACBB145C33D18DE64 /* ReceiptResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130257B74EA9800D4B7EC9B8 /* ReceiptResultView.swift */; };
 		AA7697BE144766A3E282E93F /* ScanResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C81E4435EF769CBEEB9A1A /* ScanResultView.swift */; };
 		B7542F1CADC0B4F50E8A9539 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD38215302199F1316750A7 /* TabBarView.swift */; };
@@ -26,6 +35,7 @@
 		DB959D8E42F72547F541E934 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BA9E0CC1EED246049562D4 /* Theme.swift */; };
 		E71692BE7550454E00CBB64A /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE44CBBE45A564B13DE5126B /* SignInView.swift */; };
 		F1E65DD8230B6AA5BB01B722 /* ClensApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8390BACF7BBD61FEBDCF4555 /* ClensApp.swift */; };
+		F35F522B5B5C9D0083AB128B /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24E73095FCD0192356EF03B /* CameraService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,25 +43,48 @@
 		09BA9E0CC1EED246049562D4 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		0BD8B237D95438CBC1B9F1E0 /* Clens.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Clens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		130257B74EA9800D4B7EC9B8 /* ReceiptResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptResultView.swift; sourceTree = "<group>"; };
+		23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OceanScoreEngine.swift; sourceTree = "<group>"; };
 		417E5D56C6E07B1E9ECB769E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		44484704DFEBADAB71C18AF4 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		4E3FF0D4074B43898B222EB6 /* FoodItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItem.swift; sourceTree = "<group>"; };
+		532B4790A59400372AA98278 /* LabelScanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelScanClient.swift; sourceTree = "<group>"; };
 		5A17CBB0A15153CA4818A4CA /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		5AD38215302199F1316750A7 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
 		8390BACF7BBD61FEBDCF4555 /* ClensApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClensApp.swift; sourceTree = "<group>"; };
 		84ED1B4A021703479E5F0D48 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		930E479523DAAAF3D799F363 /* CategoryImpacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryImpacts.swift; sourceTree = "<group>"; };
+		A2457722FF98D7777CB321D8 /* ReceiptOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptOCRService.swift; sourceTree = "<group>"; };
+		B24E73095FCD0192356EF03B /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		B7DE3ED0FF2AA11D2A433D5F /* Product.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product.swift; sourceTree = "<group>"; };
+		BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinator.swift; sourceTree = "<group>"; };
 		C21DA047553ED9617E2498C0 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
 		C2C81E4435EF769CBEEB9A1A /* ScanResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultView.swift; sourceTree = "<group>"; };
 		C2E9DE1E4AB7B07BFE08CD03 /* LineIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineIcons.swift; sourceTree = "<group>"; };
 		C5CF6325A26CF5E3559472CA /* RewardsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardsView.swift; sourceTree = "<group>"; };
 		D00CA355780BE4AEFAE5B114 /* SwapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapView.swift; sourceTree = "<group>"; };
 		DE44CBBE45A564B13DE5126B /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		E0E3B17A5D44813F5CDAEE90 /* OpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsClient.swift; sourceTree = "<group>"; };
+		E5F4C9308DF915186A28BABD /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
 		F6701E187FB389EDF3EE0C11 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		F91E5C3E9B395D29DCADE3FC /* OceanStressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OceanStressService.swift; sourceTree = "<group>"; };
 		FFB46ABFFA55011B6660D991 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 		FFECDCDEB63985EF762708BB /* ScoreDial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreDial.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		0636C3A7DD33F8FBF148BB9D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */,
+				B9A6861E0AB99F051D6F9CC0 /* Camera */,
+				CA4491E6DFC32CA554FE1498 /* Network */,
+				E345FA81EFEDB5F613D5C0B0 /* Ocean */,
+				D54B5B1052F4850727D3F4F5 /* OCR */,
+				7517F72FACC305CCDA33EFDB /* Scoring */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		063A028C4718058D5E50D124 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
@@ -96,6 +129,16 @@
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
+		7517F72FACC305CCDA33EFDB /* Scoring */ = {
+			isa = PBXGroup;
+			children = (
+				930E479523DAAAF3D799F363 /* CategoryImpacts.swift */,
+				4E3FF0D4074B43898B222EB6 /* FoodItem.swift */,
+				23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */,
+			);
+			path = Scoring;
+			sourceTree = "<group>";
+		};
 		80E90E3D23731CA9DE274368 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -112,6 +155,40 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		B9A6861E0AB99F051D6F9CC0 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				E5F4C9308DF915186A28BABD /* CameraPreview.swift */,
+				B24E73095FCD0192356EF03B /* CameraService.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		CA4491E6DFC32CA554FE1498 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				532B4790A59400372AA98278 /* LabelScanClient.swift */,
+				E0E3B17A5D44813F5CDAEE90 /* OpenFoodFactsClient.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		D54B5B1052F4850727D3F4F5 /* OCR */ = {
+			isa = PBXGroup;
+			children = (
+				A2457722FF98D7777CB321D8 /* ReceiptOCRService.swift */,
+			);
+			path = OCR;
+			sourceTree = "<group>";
+		};
+		E345FA81EFEDB5F613D5C0B0 /* Ocean */ = {
+			isa = PBXGroup;
+			children = (
+				F91E5C3E9B395D29DCADE3FC /* OceanStressService.swift */,
+			);
+			path = Ocean;
+			sourceTree = "<group>";
+		};
 		E75B669F226F3AB5940B0256 /* Clens */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,6 +199,7 @@
 				5297C77FAB953456E0C3B40F /* Navigation */,
 				80E90E3D23731CA9DE274368 /* Resources */,
 				063A028C4718058D5E50D124 /* Screens */,
+				0636C3A7DD33F8FBF148BB9D /* Services */,
 			);
 			path = Clens;
 			sourceTree = "<group>";
@@ -164,7 +242,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					F487E58B4626AA475024527D = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 3D8X943476;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -194,17 +272,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				828BD4C797DC7C6974EA2748 /* AppRouter.swift in Sources */,
+				4CE46F8C3D902681D2CB7B79 /* CameraPreview.swift in Sources */,
+				F35F522B5B5C9D0083AB128B /* CameraService.swift in Sources */,
+				297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */,
 				F1E65DD8230B6AA5BB01B722 /* ClensApp.swift in Sources */,
 				45AFDFD59DC42E94652D7013 /* Components.swift in Sources */,
+				85411E500CE92A849EC06B2A /* FoodItem.swift in Sources */,
 				59125EC7D0CFF82BC5ABF5BA /* HomeView.swift in Sources */,
+				307A502A14159DA72058A4AB /* LabelScanClient.swift in Sources */,
 				9A55C59CD551E37292793C26 /* LeaderboardView.swift in Sources */,
 				677C62003C6BD9016E89BB86 /* LineIcons.swift in Sources */,
 				2AF8C3D7C467D4CAE11E6A19 /* MockData.swift in Sources */,
+				3713FF8B12B4309DCD017BA1 /* OceanScoreEngine.swift in Sources */,
+				00BD01B7C45A9425EFBD9A52 /* OceanStressService.swift in Sources */,
+				9F4D5F132A3F12E22915EEBB /* OpenFoodFactsClient.swift in Sources */,
 				C2848C3B8BD678F2D679B635 /* Product.swift in Sources */,
 				D709866479E29D9C0356B373 /* ProfileView.swift in Sources */,
+				7D206EA64089CEF816FEC2C2 /* ReceiptOCRService.swift in Sources */,
 				A0BE9D2ACBB145C33D18DE64 /* ReceiptResultView.swift in Sources */,
 				56BF9DAC1466C31565A41531 /* RewardsView.swift in Sources */,
 				6BA4D6070B4A7270ED77F3C0 /* RootView.swift in Sources */,
+				21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */,
 				AA7697BE144766A3E282E93F /* ScanResultView.swift in Sources */,
 				CFC407BD686E42EFCDEB3CD9 /* ScanView.swift in Sources */,
 				710586C15F2AE314BEC94466 /* ScoreDial.swift in Sources */,
@@ -223,6 +311,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 3D8X943476;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Clens/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -244,6 +333,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 3D8X943476;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Clens/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -293,8 +383,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -360,8 +448,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";

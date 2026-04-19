@@ -2,9 +2,12 @@ import SwiftUI
 
 struct ScanResultView: View {
     @EnvironmentObject var router: AppRouter
+    @EnvironmentObject var coordinator: ScanCoordinator
     let pid: String
 
-    private var product: Product? { Mock.products[pid] }
+    private var product: Product? {
+        coordinator.product(for: pid) ?? Mock.products[pid]
+    }
 
     var body: some View {
         if let p = product {

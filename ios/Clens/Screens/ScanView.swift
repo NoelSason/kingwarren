@@ -1,115 +1,91 @@
 import SwiftUI
+import AVFoundation
 
 struct ScanView: View {
     @EnvironmentObject var router: AppRouter
-    @State private var scanning: Bool = false
-    @State private var found: Product? = nil
-    @State private var scanLineY: CGFloat = -120
+    @EnvironmentObject var coordinator: ScanCoordinator
+    @StateObject private var camera = CameraService()
+    @State private var processing: Bool = false
+    @State private var lastHandledBarcode: String? = nil
 
     var body: some View {
         ZStack {
-            background
-            tableTexture
-            // Faux subject in frame
-            if router.scanMode == .product {
-                FauxCan().offset(y: -40)
-            } else {
-                FauxReceipt().offset(y: -60)
+            Color.black.ignoresSafeArea()
+
+            // Live camera preview, or a denied-permission fallback.
+            switch camera.permission {
+            case .authorized:
+                CameraPreview(session: camera.session)
+                    .ignoresSafeArea()
+            case .denied:
+                deniedOverlay
+            case .notDetermined:
+                Color(hex: 0x0A0A09).ignoresSafeArea()
             }
 
-            // Top chrome
+            // Dim vignette so the reticle reads well over the live feed.
+            LinearGradient(
+                colors: [Color.black.opacity(0.55), Color.black.opacity(0.2), Color.black.opacity(0.55)],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
             VStack {
                 topChrome
+                    .padding(.top, 50)
                 Spacer()
             }
-            .padding(.top, 50)
 
-            // Reticle
+            reticle
+
+            // Status / hint + bottom controls.
             VStack {
                 Spacer()
-                ZStack {
-                    reticleCorners
-                    if scanning {
-                        Rectangle()
-                            .fill(LinearGradient(
-                                colors: [.clear, Color(hex: 0x6FCBE4), .clear],
-                                startPoint: .leading, endPoint: .trailing
-                            ))
-                            .frame(height: 2)
-                            .shadow(color: Color(hex: 0x6FCBE4), radius: 12)
-                            .offset(y: scanLineY)
-                    }
-                }
-                .frame(width: 240, height: router.scanMode == .product ? 240 : 300)
-                Spacer()
-                Spacer()
-            }
-            .frame(maxHeight: .infinity)
-
-            // Hint or found card + bottom controls
-            VStack {
-                Spacer()
-                if let found {
-                    foundCard(found).padding(.horizontal, 16).padding(.bottom, 140)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else {
-                    Text(scanning ? "Reading barcode…" :
-                         router.scanMode == .product ? "Center the barcode in frame" : "Hold the receipt flat")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.bottom, 220)
-                }
-
+                statusOrHint
+                    .padding(.bottom, 220)
                 bottomControls
                     .padding(.bottom, 54)
             }
         }
-        .background(Color(hex: 0x0A0A09))
         .ignoresSafeArea()
-        .onAppear { runScanCycle() }
-        .onChange(of: router.scanMode) { _, _ in runScanCycle() }
-    }
-
-    private var background: some View {
-        Group {
-            if router.scanMode == .product {
-                RadialGradient(
-                    colors: [Color(hex: 0x3A2C15), Color(hex: 0x1A1308), Color(hex: 0x0A0805)],
-                    center: UnitPoint(x: 0.5, y: 0.4),
-                    startRadius: 0, endRadius: 460
-                )
-            } else {
-                RadialGradient(
-                    colors: [Color(hex: 0x6B5735), Color(hex: 0x2A2013), Color(hex: 0x0A0805)],
-                    center: UnitPoint(x: 0.5, y: 0.45),
-                    startRadius: 0, endRadius: 480
-                )
+        .task {
+            coordinator.reset()
+            await camera.start(mode: sessionMode(for: router.scanMode))
+        }
+        .onDisappear { camera.stop() }
+        .onChange(of: router.scanMode) { _, newMode in
+            let desired = sessionMode(for: newMode)
+            camera.switchMode(to: desired)
+            lastHandledBarcode = nil
+        }
+        .onChange(of: camera.lastDetectedBarcode) { _, barcode in
+            guard let barcode, barcode != lastHandledBarcode, !processing else { return }
+            guard router.scanMode == .product else { return }
+            lastHandledBarcode = barcode
+            Task { await handleBarcode(barcode) }
+        }
+        .onChange(of: coordinator.liveProduct) { _, new in
+            guard let new else { return }
+            if !router.stack.contains(where: { if case .scanResult = $0 { return true } else { return false } }) {
+                router.pop()
+                router.push(.scanResult(pid: new.id))
+            }
+        }
+        .onChange(of: coordinator.liveReceipt) { _, new in
+            guard new != nil else { return }
+            if !router.stack.contains(where: { if case .receipt = $0 { return true } else { return false } }) {
+                router.pop()
+                router.push(.receipt)
             }
         }
     }
 
-    private var tableTexture: some View {
-        GeometryReader { geo in
-            Canvas { ctx, size in
-                let stripe: CGFloat = 80
-                ctx.opacity = 0.35
-                ctx.rotate(by: .degrees(95))
-                var x: CGFloat = -size.width
-                var i = 0
-                while x < size.width * 2 {
-                    let c = (i % 2 == 0)
-                        ? Color(hex: 0x78501E).opacity(0.4)
-                        : Color(hex: 0x3C280F).opacity(0.4)
-                    let rect = CGRect(x: x, y: -size.height, width: stripe / 2, height: size.height * 3)
-                    ctx.fill(Path(rect), with: .color(c))
-                    x += stripe / 2
-                    i += 1
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
-        }
-        .allowsHitTesting(false)
+    private func sessionMode(for scanMode: ScanMode) -> CameraService.Mode {
+        scanMode == .product ? .barcode : .photo
     }
+
+    // MARK: - Subviews
 
     private var topChrome: some View {
         HStack {
@@ -117,7 +93,7 @@ struct ScanView: View {
                 IconX(size: 18).foregroundStyle(.white)
             }
             Spacer()
-            Text(router.scanMode == .product ? "SCAN ITEM" : "SCAN RECEIPT")
+            Text(titleForMode(router.scanMode))
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(1.2)
                 .foregroundStyle(.white)
@@ -132,14 +108,35 @@ struct ScanView: View {
         .padding(.horizontal, 16)
     }
 
+    private func titleForMode(_ mode: ScanMode) -> String {
+        switch mode {
+        case .product: return "SCAN ITEM"
+        case .receipt: return "SCAN RECEIPT"
+        case .recycle: return "SCAN RECYCLING"
+        }
+    }
+
     private func chromeButton<C: View>(action: @escaping () -> Void, @ViewBuilder content: () -> C) -> some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(Color.black.opacity(0.35))
+                Circle().fill(Color.black.opacity(0.4))
                 content()
             }
             .frame(width: 36, height: 36)
         }
+    }
+
+    private var reticle: some View {
+        let size: CGFloat = router.scanMode == .product ? 240 : 300
+        return ZStack {
+            reticleCorners
+            if processing {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color(hex: 0x6FCBE4), lineWidth: 2)
+                    .shadow(color: Color(hex: 0x6FCBE4).opacity(0.6), radius: 18)
+            }
+        }
+        .frame(width: 240, height: size)
     }
 
     private var reticleCorners: some View {
@@ -171,38 +168,37 @@ struct ScanView: View {
         }
     }
 
-    private func foundCard(_ p: Product) -> some View {
-        Button {
-            router.pop()
-            router.push(.scanResult(pid: p.id))
-        } label: {
-            HStack(spacing: 12) {
-                ProductThumb(pid: p.id, size: 56)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(p.name).font(.system(size: 15, weight: .semibold))
-                    Text(p.brand).font(.system(size: 12)).foregroundStyle(Color.ink3)
-                    HStack(spacing: 6) {
-                        Circle().fill(Score.color(p.score)).frame(width: 8, height: 8)
-                        Text("\(p.score)/100").font(.serif(14))
-                        Text("Ocean Score").font(.system(size: 12)).foregroundStyle(Color.ink2)
-                    }
-                    .padding(.top, 4)
-                }
-                Spacer()
-                ZStack {
-                    Circle().fill(Color.ink).frame(width: 36, height: 36)
-                    IconChevR(size: 18).foregroundStyle(.white)
-                }
+    @ViewBuilder
+    private var statusOrHint: some View {
+        switch coordinator.status {
+        case .busy(let msg):
+            HStack(spacing: 8) {
+                ProgressView().tint(.white)
+                Text(msg).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.surface)
-                    .shadow(color: .black.opacity(0.3), radius: 30, x: 0, y: 16)
-            )
-            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .background(Capsule().fill(Color.black.opacity(0.45)))
+        case .error(let msg):
+            Text(msg)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(Capsule().fill(Color.red.opacity(0.7)))
+                .padding(.horizontal, 32)
+        case .idle:
+            Text(hintForMode(router.scanMode))
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.85))
         }
-        .buttonStyle(.plain)
+    }
+
+    private func hintForMode(_ mode: ScanMode) -> String {
+        switch mode {
+        case .product: return "Center the barcode in frame"
+        case .receipt: return "Hold the receipt flat and tap the shutter"
+        case .recycle: return "Frame the recycling and tap the shutter"
+        }
     }
 
     private var bottomControls: some View {
@@ -213,11 +209,7 @@ struct ScanView: View {
                 modeTab(title: "Recycle", mode: .recycle)
             }
             Button {
-                if router.scanMode == .product {
-                    router.pop(); router.push(.scanResult(pid: "monster"))
-                } else {
-                    router.pop(); router.push(.receipt)
-                }
+                handleShutter()
             } label: {
                 ZStack {
                     Circle()
@@ -228,7 +220,9 @@ struct ScanView: View {
                         .frame(width: 58, height: 58)
                         .overlay(Circle().stroke(Color.ink, lineWidth: 2))
                 }
+                .opacity(processing ? 0.5 : 1.0)
             }
+            .disabled(processing)
         }
     }
 
@@ -250,24 +244,71 @@ struct ScanView: View {
         }
     }
 
-    // MARK: scan cycle
-
-    private func runScanCycle() {
-        found = nil
-        scanLineY = -120
-        scanning = false
-        guard router.scanMode == .product else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            self.scanning = true
-            withAnimation(.linear(duration: 1.5).repeatCount(1, autoreverses: false)) {
-                self.scanLineY = 120
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                self.scanning = false
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    self.found = Mock.products["monster"]
+    private var deniedOverlay: some View {
+        VStack(spacing: 14) {
+            Text("Camera access needed")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("Enable the camera in Settings → Clens to scan barcodes and receipts.")
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.75))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
                 }
             }
+            .font(.system(size: 14, weight: .semibold))
+            .padding(.horizontal, 18).padding(.vertical, 10)
+            .background(Capsule().fill(Color.white))
+            .foregroundStyle(Color.ink)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func handleShutter() {
+        switch router.scanMode {
+        case .product:
+            // In product mode the barcode stream drives navigation; the
+            // shutter captures the label as a fallback for non-barcoded items.
+            Task { await captureLabel() }
+        case .receipt:
+            Task { await captureReceipt() }
+        case .recycle:
+            // Not part of the MVP — just bounce back.
+            router.pop()
+        }
+    }
+
+    private func handleBarcode(_ barcode: String) async {
+        processing = true
+        defer { processing = false }
+        await coordinator.handleBarcode(barcode)
+    }
+
+    private func captureLabel() async {
+        guard !processing else { return }
+        processing = true
+        defer { processing = false }
+        do {
+            let data = try await camera.capturePhoto()
+            await coordinator.handleLabelImage(data)
+        } catch {
+            coordinator.status = .error("Couldn't capture photo.")
+        }
+    }
+
+    private func captureReceipt() async {
+        guard !processing else { return }
+        processing = true
+        defer { processing = false }
+        do {
+            let data = try await camera.capturePhoto()
+            await coordinator.handleReceiptImage(data)
+        } catch {
+            coordinator.status = .error("Couldn't capture photo.")
         }
     }
 }
@@ -308,100 +349,6 @@ private struct CornerView: View {
             }
             ctx.stroke(p, with: .color(.white),
                        style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-        }
-    }
-}
-
-// MARK: - Faux subjects
-
-private struct FauxCan: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("M")
-                .font(.system(size: 28, weight: .black, design: .serif))
-                .italic()
-                .foregroundStyle(Color(hex: 0x4FD14F))
-                .shadow(color: Color(hex: 0x4FD14F), radius: 8)
-
-            Barcode()
-        }
-        .frame(width: 150, height: 260)
-        .background(
-            LinearGradient(
-                colors: [Color(hex: 0x0A1A0A), Color(hex: 0x0E2A12), Color(hex: 0x0A1A0A)],
-                startPoint: .top, endPoint: .bottom
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(color: .black.opacity(0.5), radius: 30, x: -20, y: 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-}
-
-private struct Barcode: View {
-    let widths: [CGFloat] = [2,1,3,1,2,1,2,3,1,2,1,3,2,1,2,3,1,2,1,3,1]
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 1) {
-                ForEach(widths.indices, id: \.self) { i in
-                    Rectangle().fill(Color.black).frame(width: widths[i], height: 32)
-                }
-            }
-            Text("0 70847 00003 4")
-                .font(.system(size: 8, design: .monospaced))
-                .foregroundStyle(.black)
-                .padding(.bottom, 4)
-                .padding(.top, 2)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.white)
-    }
-}
-
-private struct FauxReceipt: View {
-    var body: some View {
-        VStack(alignment: .center, spacing: 6) {
-            Text("WHOLE FOODS MKT")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-            Text("La Jolla Village Dr")
-                .font(.system(size: 8, design: .monospaced))
-            Color(hex: 0x8A7640).frame(height: 1).opacity(0.7)
-            Group {
-                row("GRND BF 80/20", "9.99")
-                row("HASS AVO x3", "4.47")
-                row("MONSTER ZERO", "3.49")
-                row("ORG OATS", "5.99")
-                row("ORG TOFU", "4.29")
-                row("LENTILS GRN", "2.18")
-            }
-            Color(hex: 0x8A7640).frame(height: 1).opacity(0.7)
-            HStack {
-                Text("TOTAL").font(.system(size: 10, weight: .bold, design: .monospaced))
-                Spacer()
-                Text("$68.42").font(.system(size: 10, weight: .bold, design: .monospaced))
-            }
-            .padding(.top, 2)
-            Text("THANK YOU")
-                .font(.system(size: 8, design: .monospaced))
-                .opacity(0.6)
-                .padding(.top, 8)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 16)
-        .frame(width: 200)
-        .background(Color(hex: 0xF4EDDC))
-        .foregroundStyle(Color(hex: 0x2A2112))
-        .rotationEffect(.degrees(-3))
-        .shadow(color: .black.opacity(0.5), radius: 30, x: -20, y: 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-
-    private func row(_ name: String, _ price: String) -> some View {
-        HStack {
-            Text(name).font(.system(size: 9, design: .monospaced))
-            Spacer()
-            Text(price).font(.system(size: 9, design: .monospaced))
         }
     }
 }
