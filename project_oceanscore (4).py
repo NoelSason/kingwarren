@@ -298,14 +298,14 @@ print("Interpretation: >0.6 = good, 0.3–0.6 = okay, <0.3 = weights are wrong")
 # CELL 8 — FINAL DASHBOARD (Agribalyse + LLM fallback + ML stress)
 # ============================================================
 import matplotlib.pyplot as plt
-import pandas as pd, requests, time, os, json, base64
+import pandas as pd, requests, time, os, json
 from scipy.stats import spearmanr
 from statsmodels.tsa.seasonal import STL
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error
 import anthropic
 
 # Make sure ANTHROPIC_API_KEY is set above this cell:
-os.environ["ANTHROPIC_API_KEY"] = "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"
+os.environ["ANTHROPIC_API_KEY"] = "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"
 client = anthropic.Anthropic()
 
 print("="*60)
@@ -321,25 +321,6 @@ IMPACTS["nuts"]  = {"co2":2.3, "runoff":0.10,"plastic":0.3,"water":9060}
 HEADERS = {"User-Agent":"OceanScore/0.1 (datahacks2026)"}
 DEEP = "code,product_name,categories_tags,ecoscore_score,ecoscore_data,packagings,image_front_url"
 
-# Claude sometimes wraps JSON in ```json ... ``` even when told not to.
-# The earlier split("```")[1] approach silently dropped empty segments and
-# left backticks in place when the fences were the only separator, producing
-# invalid JSON. Strip them directly instead.
-def strip_code_fences(raw):
-    s = raw.strip()
-    if not s.startswith("```"):
-        return s
-    nl = s.find("\n")
-    if nl != -1:
-        s = s[nl+1:]
-    else:
-        s = s[3:]
-        if s.lower().startswith("json"):
-            s = s[4:]
-    if s.endswith("```"):
-        s = s[:-3]
-    return s.strip()
-
 # ---- LLM fallback for products without Agribalyse data ----
 def llm_estimate(product_name, image_url=None):
     prompt = f"""Estimate environmental impact for this food product: "{product_name}"
@@ -348,46 +329,51 @@ Return ONLY a JSON object, no markdown, no code fences, no commentary:
 {{
   "co2_total_kg": <float, kg CO2-eq per kg, typical 0.5-50>,
   "ef_total": <float, environmental footprint 0.0-1.5, includes eutrophication>,
-  "has_plastic_packaging": <true/false>,
+  "plastic_score": <float 0.0-1.0, where 0=heavy non-recyclable plastic, 1.0=no plastic>,
+  "water_l_per_kg": <int, liters of freshwater per kg, typical 100-15000>,
   "estimated_ecoscore": <int 0-100, 100=best>
 }}"""
     content = []
-    # Download the OFF image ourselves and send as base64. Passing the URL
-    # directly makes Anthropic's fetcher download it, and images.openfoodfacts.org
-    # is slow enough that that path 400s with "timed out while trying to
-    # download the file" — observed in production.
     if image_url:
         try:
             img_resp = requests.get(image_url, headers=HEADERS, timeout=8)
             if img_resp.status_code == 200 and img_resp.content:
-                content.append({
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": base64.standard_b64encode(img_resp.content).decode(),
-                    },
-                })
-            else:
-                print(f"  ! OFF image fetch non-200 ({img_resp.status_code}) — text-only")
-        except Exception as e:
-            print(f"  ! OFF image fetch failed ({e}) — text-only")
+                content.append({"type":"image","source":{"type":"base64",
+                    "media_type":"image/jpeg",
+                    "data": base64.standard_b64encode(img_resp.content).decode()}})
+        except Exception:
+            pass
     content.append({"type": "text", "text": prompt})
 
-    try:
-        msg = client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=300,
-            messages=[{"role": "user", "content": content}],
-        )
-    except anthropic.APIStatusError as e:
-        body = getattr(e, "response", None)
-        snippet = (body.text[:500] if body is not None else str(e))
-        print(f"  ! Anthropic error body: {snippet}")
-        raise
+    msg = client.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=400,
+        messages=[{"role": "user", "content": content}],
+    )
 
-    txt = msg.content[0].text
-    return json.loads(strip_code_fences(txt))
+    # Robust extraction — handles empty content, markdown fences, leading text
+    if not msg.content:
+        raise ValueError("empty content from LLM")
+    txt = msg.content[0].text.strip() if msg.content[0].text else ""
+    if not txt:
+        raise ValueError("empty text from LLM")
+
+    # Strip code fences
+    if "```" in txt:
+        # Take whatever's between the first pair of fences
+        parts = txt.split("```")
+        if len(parts) >= 2:
+            txt = parts[1]
+            if txt.startswith("json"):
+                txt = txt[4:]
+            txt = txt.strip()
+
+    # Find the JSON object even if there's preamble
+    start = txt.find("{")
+    end   = txt.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"no JSON found in: {txt[:100]}")
+    return json.loads(txt[start:end+1])
 
 # ---- Per-product scoring (Agribalyse → LLM fallback) ----
 def score_real(barcode):
