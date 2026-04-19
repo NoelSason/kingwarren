@@ -11,8 +11,10 @@ from db import (
     create_account,
     get_config_error,
     get_profile_snapshot,
+    is_databricks_configured,
     is_supabase_configured,
     sign_in,
+    upsert_profile,
 )
 
 app = Flask(__name__)
@@ -141,10 +143,23 @@ def signup_route():
         ), 400
 
     user = getattr(response, "user", None)
+    user_id = getattr(user, "id", None)
     session["user_email"] = normalize_email(form["email"])
-    session["user_id"] = getattr(user, "id", None)
+    session["user_id"] = user_id
     session["test_password"] = form["password"]
     store_auth_session(response)
+
+    if user_id and is_databricks_configured():
+        try:
+            upsert_profile(
+                user_id=user_id,
+                email=normalize_email(form["email"]),
+                username=form["username"].strip().lower(),
+                display_name=form["display_name"].strip(),
+                seabucks=0,
+            )
+        except Exception as exc:
+            flash(f"Profile saved to auth but Databricks write failed: {exc}", "error")
     store_profile_preview(
         email=normalize_email(form["email"]),
         username=form["username"].strip().lower(),
