@@ -305,7 +305,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error
 import anthropic
 
 # Make sure ANTHROPIC_API_KEY is set above this cell:
-# os.environ["ANTHROPIC_API_KEY"] = "sk-ant-..."
+os.environ["ANTHROPIC_API_KEY"] = "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"
 client = anthropic.Anthropic()
 
 print("="*60)
@@ -322,24 +322,20 @@ HEADERS = {"User-Agent":"OceanScore/0.1 (datahacks2026)"}
 DEEP = "code,product_name,categories_tags,ecoscore_score,ecoscore_data,packagings,image_front_url"
 
 # ---- LLM fallback for products without Agribalyse data ----
-def llm_estimate(product_name, image_url=None):
+def llm_estimate(product_name, image_url=None):  # image_url kept for compat, ignored
     prompt = f"""Estimate environmental impact for this food product: "{product_name}"
 
 Return ONLY a JSON object, no markdown, no code fences, no commentary:
 {{
-  "co2_total_kg": <float, kg CO2-eq per kg product, typical 0.5-50>,
-  "ef_total": <float, environmental footprint score 0.0-1.5, includes eutrophication>,
+  "co2_total_kg": <float, kg CO2-eq per kg, typical 0.5-50>,
+  "ef_total": <float, environmental footprint 0.0-1.5, includes eutrophication>,
   "has_plastic_packaging": <true/false>,
-  "estimated_ecoscore": <int 0-100, environmental friendliness, 100=best>
+  "estimated_ecoscore": <int 0-100, 100=best>
 }}"""
-    content = [{"type": "text", "text": prompt}]
-    if image_url:
-        content.insert(0, {"type": "image",
-                           "source": {"type": "url", "url": image_url}})
     msg = client.messages.create(
         model="claude-haiku-4-5",
         max_tokens=300,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": prompt}],
     )
     txt = msg.content[0].text.strip()
     if txt.startswith("```"):
@@ -542,3 +538,8 @@ for fname in uploaded:
 
 #result = scan_and_score("/path/to/uploaded.jpg")
 #Test it now: take a phone photo of any product barcode, upload, and you should see the full pipeline run end-to-end — image → digits → product info → OceanScore.
+
+#direct input to output testing
+#print(score_real("3017620422003"))
+
+#why is it all taking so long too
