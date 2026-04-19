@@ -5,6 +5,7 @@ struct ScanView: View {
     @EnvironmentObject var router: AppRouter
     @EnvironmentObject var coordinator: ScanCoordinator
     @StateObject private var camera = CameraService()
+    @StateObject private var auto = AutoRouteController()
     @State private var processing: Bool = false
     @State private var lastHandledBarcode: String? = nil
 
@@ -46,6 +47,8 @@ struct ScanView: View {
             // Status / hint + bottom controls.
             VStack {
                 Spacer()
+                autoDetectionBadge
+                    .padding(.bottom, 8)
                 statusOrHint
                     .padding(.bottom, 220)
                 bottomControls
@@ -55,6 +58,8 @@ struct ScanView: View {
         .ignoresSafeArea()
         .task {
             coordinator.reset()
+            auto.bind(router: router, camera: camera)
+            camera.frameSampler.delegate = auto
             await camera.start(mode: sessionMode(for: router.scanMode))
         }
         .onDisappear {
@@ -189,6 +194,44 @@ struct ScanView: View {
     }
 
     @ViewBuilder
+    private var autoDetectionBadge: some View {
+        if auto.enabled {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(auto.detection == .idle ? Color.white.opacity(0.4) : Color(hex: 0x6FCBE4))
+                    .frame(width: 6, height: 6)
+                Text(autoDetectionText)
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Capsule().fill(Color.black.opacity(0.45)))
+        } else {
+            Button {
+                auto.reenable()
+            } label: {
+                HStack(spacing: 6) {
+                    Text("AUTO OFF — TAP TO RESUME")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(0.8)
+                        .foregroundStyle(.white.opacity(0.75))
+                }
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(Capsule().fill(Color.black.opacity(0.45)))
+            }
+        }
+    }
+
+    private var autoDetectionText: String {
+        switch auto.detection {
+        case .idle: return "AUTO · LOOKING…"
+        case .barcode: return "AUTO · BARCODE"
+        case .receipt: return "AUTO · RECEIPT"
+        }
+    }
+
+    @ViewBuilder
     private var statusOrHint: some View {
         switch coordinator.status {
         case .busy(let msg):
@@ -249,6 +292,9 @@ struct ScanView: View {
     private func modeTab(title: String, mode: ScanMode) -> some View {
         let active = router.scanMode == mode
         return Button {
+            // Manual selection beats the classifier — user's choice is
+            // authoritative until they tap the "Auto" capsule to re-enable.
+            auto.disableForManualOverride()
             router.scanMode = mode
         } label: {
             VStack(spacing: 4) {
@@ -305,6 +351,7 @@ struct ScanView: View {
     // MARK: - Actions
 
     private func handleShutter() {
+        ScanLog.step(0, "shutter pressed, mode=\(router.scanMode) (barcode stream did NOT fire — going to \(router.scanMode == .product ? "label-photo" : "receipt-photo") path)")
         switch router.scanMode {
         case .product:
             // In product mode the barcode stream drives navigation; the

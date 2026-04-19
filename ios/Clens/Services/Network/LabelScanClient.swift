@@ -73,12 +73,17 @@ enum LabelScanClient {
     }
 
     static func scan(jpegData: Data) async throws -> FoodItem {
-        guard let key = apiKey else { throw LabelError.missingAPIKey }
+        ScanLog.llm(1, "label scan: JPEG bytes=\(jpegData.count) (barcode path skipped)")
+        guard let key = apiKey else {
+            ScanLog.llm(2, "ABORT: ANTHROPIC_API_KEY missing from Info.plist / env")
+            throw LabelError.missingAPIKey
+        }
 
         let base64 = jpegData.base64EncodedString()
 
+        let model = "claude-sonnet-4-6"
         let body: [String: Any] = [
-            "model": "claude-sonnet-4-6",
+            "model": model,
             "max_tokens": 1024,
             "system": systemPrompt,
             "messages": [[
@@ -107,16 +112,21 @@ enum LabelScanClient {
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 30
+        ScanLog.llm(2, "POST https://api.anthropic.com/v1/messages model=\(model) image_b64=\(base64.count) chars")
 
         let (data, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+        ScanLog.llm(3, "Anthropic response status=\(statusCode) bytes=\(data.count)")
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
             throw LabelError.network(http.statusCode)
         }
 
         let decoded = try JSONDecoder().decode(MessageResponse.self, from: data)
         guard let raw = decoded.content.first(where: { $0.type == "text" })?.text, !raw.isEmpty else {
+            ScanLog.llm(4, "LLM returned empty text content")
             throw LabelError.empty
         }
+        ScanLog.llm(4, "LLM text block: \(raw.count) chars")
 
         // Strip markdown fences the same way the Python does.
         var json = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -129,13 +139,18 @@ enum LabelScanClient {
             }
         }
 
-        guard let jsonData = json.data(using: .utf8) else { throw LabelError.decoding }
+        guard let jsonData = json.data(using: .utf8) else {
+            ScanLog.llm(5, "failed to convert stripped text to UTF-8 JSON")
+            throw LabelError.decoding
+        }
         let extracted = try JSONDecoder().decode(Extracted.self, from: jsonData)
+        ScanLog.llm(5, "LLM JSON parsed: name='\(extracted.normalized_name ?? "?")' category='\(extracted.category ?? "?")' organic=\(extracted.is_organic ?? false) packaging='\(extracted.packaging_type ?? "?")' confidence=\(extracted.classification_confidence ?? 0)")
 
         let category = FoodCategory(rawLoose: extracted.category ?? "unknown")
         let packaging = PackagingType(rawLoose: extracted.packaging_type ?? "unknown")
         let organic = extracted.is_organic ?? false
         let local = extracted.is_local ?? false
+        ScanLog.llm(6, "FoodItem built from LLM (no agribalyse — will use category baseline in scoring)")
 
         return OceanScoreEngine.foodItem(
             name: extracted.normalized_name ?? "unknown product",

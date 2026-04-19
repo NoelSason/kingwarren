@@ -73,6 +73,9 @@ enum OceanScoreEngine {
             climateImpact: adjusted.climate,
             runoffImpact: adjusted.runoff,
             plasticImpact: adjusted.plastic,
+            agribalyseCO2Kg: nil,
+            agribalyseEF: nil,
+            hasPlasticPackaging: nil,
             rawLabelText: "",
             barcode: barcode,
             sourceOrigin: sourceOrigin
@@ -80,21 +83,41 @@ enum OceanScoreEngine {
     }
 
     static func score(_ item: FoodItem, stressIndex: Double) -> Scored {
-        let climate = Double(item.climateImpact)
-        let runoff  = Double(item.runoffImpact)
-        let plastic = Double(item.plasticImpact)
-
-        let rawPenalty = 0.4 * climate
-                       + 0.4 * runoff * stressIndex
-                       + 0.2 * plastic
-        let score = max(0, Int((100.0 - rawPenalty).rounded()))
+        let score: Int
+        if let co2Kg = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
+            // Cell 8 score_real() from project_oceanscore.py.
+            let co2        = 1.0 - min(co2Kg / 30.0, 1.0)
+            let efNorm     = 1.0 - min(ef / 1.0, 1.0)
+            let runoff     = efNorm * (2.0 - stressIndex) / 2.0
+            let plasticTerm = (item.hasPlasticPackaging ?? false) ? 0.3 : 1.0
+            let composite  = 0.30 * co2 + 0.30 * runoff + 0.20 * plasticTerm + 0.20 * efNorm
+            score = max(0, min(100, Int((100.0 * composite).rounded())))
+            ScanLog.step(12, "scoring branch=AGRIBALYSE (Cell 8 formula)")
+            ScanLog.step(13, String(format: "  co2=%.2f ef_norm=%.2f runoff=%.2f plastic_term=%.2f → composite=%.3f → score=%d",
+                                    co2, efNorm, runoff, plasticTerm, composite, score))
+        } else {
+            // Category-baseline fallback (receipts, unknown SKUs).
+            let climate = Double(item.climateImpact)
+            let runoff  = Double(item.runoffImpact)
+            let plastic = Double(item.plasticImpact)
+            let rawPenalty = 0.4 * climate
+                           + 0.4 * runoff * stressIndex
+                           + 0.2 * plastic
+            score = max(0, Int((100.0 - rawPenalty).rounded()))
+            ScanLog.step(12, "scoring branch=CATEGORY-BASELINE (Cell 6 formula)")
+            ScanLog.step(13, String(format: "  climate=%.0f runoff=%.0f*stress(%.2f) plastic=%.0f → penalty=%.2f → score=%d",
+                                    climate, runoff, stressIndex, plastic, rawPenalty, score))
+        }
+        let tier = tierPoints(for: score)
+        let display = Int(Double(score) * 1.6)
+        ScanLog.step(14, "score=\(score) tierPoints=\(tier) seabucks(displayPoints)=\(display)")
 
         return Scored(
             foodItem: item,
             stressIndex: stressIndex,
             score: score,
-            points: tierPoints(for: score),
-            displayPoints: Int(Double(score) * 1.6)
+            points: tier,
+            displayPoints: display
         )
     }
 
@@ -111,6 +134,25 @@ enum OceanScoreEngine {
     // Convert backend penalty (higher=worse) to UI breakdown value (higher=better)
     // so the existing ScanResultView breakdown row renders naturally.
     static func uiBreakdown(from item: FoodItem, stressIndex: Double) -> Product.Breakdown {
+        if let co2Kg = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
+            // Mirror the Cell 8 factor math so the bars track the final score.
+            let co2 = 1.0 - min(co2Kg / 30.0, 1.0)
+            let efNorm = 1.0 - min(ef / 1.0, 1.0)
+            let runoff = efNorm * (2.0 - stressIndex) / 2.0
+            let plasticTerm = (item.hasPlasticPackaging ?? false) ? 0.3 : 1.0
+            let waterLiters = CategoryImpacts.waterLitersPerKg[item.category] ?? 2000
+            let waterDisp = max(0, 100 - min(100, Int(Double(waterLiters) / 200.0)))
+            let bClimate = Int((100.0 * co2).rounded())
+            let bRunoff = Int((100.0 * runoff).rounded())
+            let bPlastic = Int((100.0 * plasticTerm).rounded())
+            ScanLog.step(15, "breakdown (agribalyse): climate=\(bClimate) runoff=\(bRunoff) plastic=\(bPlastic) water=\(waterDisp)")
+            return Product.Breakdown(
+                climate: bClimate,
+                runoff:  bRunoff,
+                plastic: bPlastic,
+                water:   waterDisp
+            )
+        }
         let climateDisp = max(0, 100 - item.climateImpact)
         let runoffPenalty = Int((Double(item.runoffImpact) * stressIndex).rounded())
         let runoffDisp = max(0, min(100, 100 - runoffPenalty))
@@ -118,6 +160,7 @@ enum OceanScoreEngine {
         let waterLiters = CategoryImpacts.waterLitersPerKg[item.category] ?? 2000
         let waterPenalty = min(100, Int(Double(waterLiters) / 200.0))
         let waterDisp = max(0, 100 - waterPenalty)
+        ScanLog.step(15, "breakdown (category baseline): climate=\(climateDisp) runoff=\(runoffDisp) plastic=\(plasticDisp) water=\(waterDisp)")
         return Product.Breakdown(
             climate: climateDisp,
             runoff:  runoffDisp,
@@ -149,6 +192,7 @@ enum OceanScoreEngine {
         if facts.isEmpty {
             facts.append("Category: \(item.category.displayName)")
         }
+        ScanLog.step(16, "facts assembled (\(facts.count)): \(facts.joined(separator: " | "))")
 
         let badge = Score.label(scored.score)
 

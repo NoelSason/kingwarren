@@ -1,6 +1,17 @@
 import Foundation
 import Combine
 
+// Uniformly-formatted debug log lines so you can follow a single scan
+// end-to-end in the Xcode console. Filter with: "[SCAN"
+enum ScanLog {
+    static func step(_ n: Int, _ message: String) {
+        print("[SCAN \(String(format: "%02d", n))] \(message)")
+    }
+    static func llm(_ n: Int, _ message: String) {
+        print("[SCAN L\(n)] \(message)")
+    }
+}
+
 // Orchestrator between camera capture, scoring, and the result views.
 // Holds the most recent live-scan result so ScanResultView / ReceiptResultView
 // can render live data instead of the Mock fallback when available.
@@ -28,14 +39,24 @@ final class ScanCoordinator: ObservableObject {
     // MARK: - Product flows
 
     func handleBarcode(_ barcode: String) async {
+        ScanLog.step(2, "coordinator received barcode='\(barcode)', starting OFF lookup (stress=\(String(format: "%.2f", ocean.stressIndex)))")
         status = .busy("Looking up barcode…")
         do {
             let item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
+            ScanLog.step(10, "FoodItem built: name='\(item.normalizedName)' brand='\(item.brand)' category=\(item.category.rawValue) organic=\(item.isOrganic) packaging=\(item.packagingType.rawValue)")
+            if let co2 = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
+                ScanLog.step(11, "agribalyse carried through: co2=\(String(format: "%.2f", co2))kg/kg ef=\(String(format: "%.2f", ef)) plastic=\(item.hasPlasticPackaging ?? false)")
+            } else {
+                ScanLog.step(11, "no agribalyse data — will fall back to category-baseline scoring")
+            }
             let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
+            ScanLog.step(17, "product ready: id='\(product.id)' score=\(product.score) displayPoints=\(Int(Double(product.score) * 1.6)) facts=\(product.facts.count)")
             self.liveProduct = product
             self.status = .idle
             history?.log(.product(product, points: OceanScoreEngine.tierPoints(for: product.score)))
+            ScanLog.step(18, "liveProduct published → ScanView will navigate to result")
         } catch {
+            ScanLog.step(99, "OFF lookup failed (\(error)) — showing baseline estimate")
             // Fall back so the demo still progresses — unknown-category item
             // scored against the stress index gives a sensible-looking card.
             let fallback = FoodItem.unknown(name: "Barcode \(barcode)", barcode: barcode)
@@ -46,41 +67,52 @@ final class ScanCoordinator: ObservableObject {
     }
 
     func handleLabelImage(_ jpeg: Data) async {
+        ScanLog.step(20, "handleLabelImage: JPEG bytes=\(jpeg.count), LabelScanClient configured=\(LabelScanClient.isConfigured)")
         status = .busy("Reading label…")
 
         if LabelScanClient.isConfigured {
             do {
                 let item = try await LabelScanClient.scan(jpegData: jpeg)
+                ScanLog.step(21, "LLM path SUCCESS → FoodItem name='\(item.normalizedName)' category=\(item.category.rawValue)")
                 let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
                 self.liveProduct = product
                 self.status = .idle
+                ScanLog.step(25, "liveProduct published via label/LLM path → ScanView will navigate")
                 return
             } catch {
-                // Fall through to local fallback.
+                ScanLog.step(22, "LLM path FAILED (\(error)) — falling back to unknown baseline")
             }
+        } else {
+            ScanLog.step(22, "LLM not configured (no ANTHROPIC_API_KEY) — falling back to unknown baseline")
         }
 
         // No API key (or network error): use an unknown-category baseline so
         // the UI still shows a meaningful score instead of failing the demo.
         let item = FoodItem.unknown(name: "Scanned label")
+        ScanLog.step(23, "using FoodItem.unknown('Scanned label') — this is why climate/runoff/plastic are all 50")
         let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
         self.liveProduct = product
         self.status = LabelScanClient.isConfigured
             ? .error("Couldn't reach the label service.")
             : .idle
+        ScanLog.step(25, "liveProduct published via fallback path → ScanView will navigate")
     }
 
     // MARK: - Receipt flow
 
     func handleReceiptImage(_ jpeg: Data) async {
+        ScanLog.step(30, "handleReceiptImage: JPEG bytes=\(jpeg.count) → starting OCR")
         status = .busy("Reading receipt…")
         do {
             let parsed = try await ReceiptOCRService.recognize(imageData: jpeg)
+            ScanLog.step(31, "receipt OCR parsed: store='\(parsed.store)' total=\(parsed.total) lines=\(parsed.lines.count)")
             let receipt = buildReceipt(from: parsed)
+            ScanLog.step(33, "receipt built: items=\(receipt.items.count) earned=\(receipt.earned) avgScore=\(receipt.averageScore)")
             self.liveReceipt = receipt
             self.status = .idle
             history?.log(.receipt(receipt))
         } catch {
+            ScanLog.step(30, "receipt OCR FAILED: \(error)")
             self.status = .error("Couldn't read receipt. Try a clearer photo.")
         }
     }
@@ -92,7 +124,8 @@ final class ScanCoordinator: ObservableObject {
         var totalEarned: Int = 0
         var totalScore: Int = 0
 
-        for line in parsed.lines {
+        for (idx, line) in parsed.lines.enumerated() {
+            ScanLog.step(32, "receipt line \(idx+1)/\(parsed.lines.count): '\(line.rawName)' category=\(line.category.rawValue) price=\(line.price)")
             let organic = ReceiptOCRService.isOrganic(line.rawName)
             let item = OceanScoreEngine.foodItem(
                 name: line.rawName,
