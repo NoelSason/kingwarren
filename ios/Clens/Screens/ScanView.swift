@@ -15,8 +15,12 @@ struct ScanView: View {
             // Live camera preview, or a denied-permission fallback.
             switch camera.permission {
             case .authorized:
-                CameraPreview(session: camera.session)
-                    .ignoresSafeArea()
+                if camera.unavailable {
+                    unavailableOverlay
+                } else {
+                    CameraPreview(session: camera.session)
+                        .ignoresSafeArea()
+                }
             case .denied:
                 deniedOverlay
             case .notDetermined:
@@ -53,7 +57,11 @@ struct ScanView: View {
             coordinator.reset()
             await camera.start(mode: sessionMode(for: router.scanMode))
         }
-        .onDisappear { camera.stop() }
+        .onDisappear {
+            // Fully tear down before returning so the next view doesn't
+            // receive a half-alive capture session (the FigXPC asserts).
+            camera.stop()
+        }
         .onChange(of: router.scanMode) { _, newMode in
             let desired = sessionMode(for: newMode)
             camera.switchMode(to: desired)
@@ -68,15 +76,21 @@ struct ScanView: View {
         .onChange(of: coordinator.liveProduct) { _, new in
             guard let new else { return }
             if !router.stack.contains(where: { if case .scanResult = $0 { return true } else { return false } }) {
-                router.pop()
-                router.push(.scanResult(pid: new.id))
+                camera.stop()
+                DispatchQueue.main.async {
+                    router.pop()
+                    router.push(.scanResult(pid: new.id))
+                }
             }
         }
         .onChange(of: coordinator.liveReceipt) { _, new in
             guard new != nil else { return }
             if !router.stack.contains(where: { if case .receipt = $0 { return true } else { return false } }) {
-                router.pop()
-                router.push(.receipt)
+                camera.stop()
+                DispatchQueue.main.async {
+                    router.pop()
+                    router.push(.receipt)
+                }
             }
         }
     }
@@ -99,11 +113,16 @@ struct ScanView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Capsule().fill(Color.black.opacity(0.35)))
+                .background(Capsule().fill(Color.black.opacity(0.55)))
             Spacer()
-            chromeButton {} content: {
-                IconBolt(size: 16).foregroundStyle(.white)
+            chromeButton {
+                camera.toggleTorch()
+            } content: {
+                IconBolt(size: 16)
+                    .foregroundStyle(camera.torchOn ? Color.yellow : .white)
             }
+            .opacity(camera.torchSupported ? 1 : 0.35)
+            .disabled(!camera.torchSupported)
         }
         .padding(.horizontal, 16)
     }
@@ -119,10 +138,11 @@ struct ScanView: View {
     private func chromeButton<C: View>(action: @escaping () -> Void, @ViewBuilder content: () -> C) -> some View {
         Button(action: action) {
             ZStack {
-                Circle().fill(Color.black.opacity(0.4))
+                Circle().fill(Color.black.opacity(0.65))
+                Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
                 content()
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 40, height: 40)
         }
     }
 
@@ -240,6 +260,22 @@ struct ScanView: View {
                     .fill(active ? .white : .clear)
                     .frame(height: 2)
                     .frame(width: 30)
+            }
+        }
+    }
+
+    private var unavailableOverlay: some View {
+        ZStack {
+            Color(hex: 0x0A0A09).ignoresSafeArea()
+            VStack(spacing: 14) {
+                Text("Camera unavailable")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("This device has no camera, or the camera failed to start. Try again on a physical iPhone.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
         }
     }

@@ -11,20 +11,17 @@ struct TabBarView: View {
             tab(.leaderboard, label: "Board")   { IconTrophy(size: 22) }
             tab(.profile,     label: "Profile") { IconUser(size: 22) }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 28)
-        .frame(height: 92)
+        .padding(.top, 10)
+        .padding(.bottom, 34)
         .background(
-            ZStack {
-                Color.bg.opacity(0.85)
-                Rectangle().fill(.ultraThinMaterial).opacity(0.85)
-            }
-        )
-        .overlay(
-            Rectangle()
-                .fill(Color.black.opacity(0.06))
-                .frame(height: 1),
-            alignment: .top
+            Color.bg
+                .overlay(
+                    Rectangle()
+                        .fill(Color.black.opacity(0.06))
+                        .frame(height: 1),
+                    alignment: .top
+                )
+                .ignoresSafeArea(edges: .bottom)
         )
     }
 

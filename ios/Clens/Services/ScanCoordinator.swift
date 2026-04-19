@@ -18,9 +18,11 @@ final class ScanCoordinator: ObservableObject {
     @Published private(set) var liveReceipt: Receipt? = nil
 
     let ocean: OceanStressService
+    let history: ScanHistoryStore?
 
-    init(ocean: OceanStressService) {
+    init(ocean: OceanStressService, history: ScanHistoryStore? = nil) {
         self.ocean = ocean
+        self.history = history
     }
 
     // MARK: - Product flows
@@ -32,6 +34,7 @@ final class ScanCoordinator: ObservableObject {
             let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
             self.liveProduct = product
             self.status = .idle
+            history?.log(.product(product, points: OceanScoreEngine.tierPoints(for: product.score)))
         } catch {
             // Fall back so the demo still progresses — unknown-category item
             // scored against the stress index gives a sensible-looking card.
@@ -76,6 +79,7 @@ final class ScanCoordinator: ObservableObject {
             let receipt = buildReceipt(from: parsed)
             self.liveReceipt = receipt
             self.status = .idle
+            history?.log(.receipt(receipt))
         } catch {
             self.status = .error("Couldn't read receipt. Try a clearer photo.")
         }

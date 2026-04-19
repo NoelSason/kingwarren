@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @EnvironmentObject var router: AppRouter
     private var user: UserProfile { Mock.warren }
+    @AppStorage("clens.darkMode") private var darkMode: Bool = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -29,11 +31,15 @@ struct ProfileView: View {
     private var topBar: some View {
         HStack {
             Spacer()
-            Button {} label: {
+            Button {
+                darkMode.toggle()
+            } label: {
                 ZStack {
                     Circle().fill(Color.surface)
                         .overlay(Circle().stroke(Color.hair, lineWidth: 1))
-                    IconSettings(size: 18)
+                    Image(systemName: darkMode ? "sun.max.fill" : "moon.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.ink)
                 }
                 .frame(width: 36, height: 36)
             }
@@ -150,7 +156,9 @@ struct ProfileView: View {
 
     private var accountMenu: some View {
         VStack(spacing: 0) {
-            MenuRow(icon: AnyView(IconReceipt(size: 18)), title: "Scan history")
+            MenuRow(icon: AnyView(IconReceipt(size: 18)), title: "Scan history") {
+                router.push(.scanHistory)
+            }
             Color.hair.frame(height: 1)
             MenuRow(icon: AnyView(IconLeaf(size: 18)), title: "Preferences (diet, budget)")
             Color.hair.frame(height: 1)
@@ -211,20 +219,28 @@ private struct StatTile: View {
 private struct MenuRow: View {
     let icon: AnyView
     let title: String
+    var action: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color(hex: 0xF0EFE9))
-                icon.foregroundStyle(Color.ink2)
+        Button {
+            action?()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color(hex: 0xF0EFE9))
+                    icon.foregroundStyle(Color.ink2)
+                }
+                .frame(width: 32, height: 32)
+                Text(title).font(.system(size: 14)).foregroundStyle(Color.ink)
+                Spacer()
+                IconChevR(size: 14).foregroundStyle(Color.ink3)
             }
-            .frame(width: 32, height: 32)
-            Text(title).font(.system(size: 14))
-            Spacer()
-            IconChevR(size: 14).foregroundStyle(Color.ink3)
+            .contentShape(Rectangle())
+            .padding(.vertical, 14)
+            .padding(.horizontal, 4)
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 4)
+        .buttonStyle(.plain)
+        .disabled(action == nil)
     }
 }

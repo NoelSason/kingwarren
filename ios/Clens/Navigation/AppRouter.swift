@@ -13,6 +13,7 @@ enum Route: Hashable {
     case scanResult(pid: String)
     case swap(pid: String)
     case receipt
+    case scanHistory
 }
 
 @MainActor

@@ -10,11 +10,13 @@
 		00BD01B7C45A9425EFBD9A52 /* OceanStressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91E5C3E9B395D29DCADE3FC /* OceanStressService.swift */; };
 		0982C5C5091F2032964B1BA9 /* SwapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00CA355780BE4AEFAE5B114 /* SwapView.swift */; };
 		21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */; };
+		2316C3BFC568A24BA5854161 /* ScanHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0B80FB355F3C229013668B /* ScanHistoryView.swift */; };
 		297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930E479523DAAAF3D799F363 /* CategoryImpacts.swift */; };
 		2AF8C3D7C467D4CAE11E6A19 /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C21DA047553ED9617E2498C0 /* MockData.swift */; };
 		307A502A14159DA72058A4AB /* LabelScanClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532B4790A59400372AA98278 /* LabelScanClient.swift */; };
 		3713FF8B12B4309DCD017BA1 /* OceanScoreEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */; };
 		45AFDFD59DC42E94652D7013 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E53449B070A0BADA863830 /* Components.swift */; };
+		47E6BC250332C48C45A3755A /* ScanHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFAEEE4BEB772C77A67EAA2 /* ScanHistoryStore.swift */; };
 		4CE46F8C3D902681D2CB7B79 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F4C9308DF915186A28BABD /* CameraPreview.swift */; };
 		56BF9DAC1466C31565A41531 /* RewardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5CF6325A26CF5E3559472CA /* RewardsView.swift */; };
 		59125EC7D0CFF82BC5ABF5BA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84ED1B4A021703479E5F0D48 /* HomeView.swift */; };
@@ -30,6 +32,7 @@
 		AA7697BE144766A3E282E93F /* ScanResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C81E4435EF769CBEEB9A1A /* ScanResultView.swift */; };
 		B7542F1CADC0B4F50E8A9539 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD38215302199F1316750A7 /* TabBarView.swift */; };
 		C2848C3B8BD678F2D679B635 /* Product.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DE3ED0FF2AA11D2A433D5F /* Product.swift */; };
+		C52F65C474990F239F9AD731 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 515696807BF9FB8870393175 /* SupabaseClient.swift */; };
 		CFC407BD686E42EFCDEB3CD9 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A17CBB0A15153CA4818A4CA /* ScanView.swift */; };
 		D709866479E29D9C0356B373 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44484704DFEBADAB71C18AF4 /* ProfileView.swift */; };
 		DB959D8E42F72547F541E934 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BA9E0CC1EED246049562D4 /* Theme.swift */; };
@@ -41,17 +44,20 @@
 /* Begin PBXFileReference section */
 		07E53449B070A0BADA863830 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		09BA9E0CC1EED246049562D4 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		0BD8B237D95438CBC1B9F1E0 /* Clens.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Clens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0BD8B237D95438CBC1B9F1E0 /* Clens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clens.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		130257B74EA9800D4B7EC9B8 /* ReceiptResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptResultView.swift; sourceTree = "<group>"; };
 		23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OceanScoreEngine.swift; sourceTree = "<group>"; };
 		417E5D56C6E07B1E9ECB769E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		44484704DFEBADAB71C18AF4 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		4E3FF0D4074B43898B222EB6 /* FoodItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItem.swift; sourceTree = "<group>"; };
+		515696807BF9FB8870393175 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		532B4790A59400372AA98278 /* LabelScanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelScanClient.swift; sourceTree = "<group>"; };
 		5A17CBB0A15153CA4818A4CA /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		5AD38215302199F1316750A7 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
 		8390BACF7BBD61FEBDCF4555 /* ClensApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClensApp.swift; sourceTree = "<group>"; };
 		84ED1B4A021703479E5F0D48 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		8A0B80FB355F3C229013668B /* ScanHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryView.swift; sourceTree = "<group>"; };
+		8DFAEEE4BEB772C77A67EAA2 /* ScanHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryStore.swift; sourceTree = "<group>"; };
 		930E479523DAAAF3D799F363 /* CategoryImpacts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryImpacts.swift; sourceTree = "<group>"; };
 		A2457722FF98D7777CB321D8 /* ReceiptOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptOCRService.swift; sourceTree = "<group>"; };
 		B24E73095FCD0192356EF03B /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
@@ -93,6 +99,7 @@
 				44484704DFEBADAB71C18AF4 /* ProfileView.swift */,
 				130257B74EA9800D4B7EC9B8 /* ReceiptResultView.swift */,
 				C5CF6325A26CF5E3559472CA /* RewardsView.swift */,
+				8A0B80FB355F3C229013668B /* ScanHistoryView.swift */,
 				C2C81E4435EF769CBEEB9A1A /* ScanResultView.swift */,
 				5A17CBB0A15153CA4818A4CA /* ScanView.swift */,
 				DE44CBBE45A564B13DE5126B /* SignInView.swift */,
@@ -169,6 +176,8 @@
 			children = (
 				532B4790A59400372AA98278 /* LabelScanClient.swift */,
 				E0E3B17A5D44813F5CDAEE90 /* OpenFoodFactsClient.swift */,
+				8DFAEEE4BEB772C77A67EAA2 /* ScanHistoryStore.swift */,
+				515696807BF9FB8870393175 /* SupabaseClient.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -242,7 +251,6 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					F487E58B4626AA475024527D = {
-						DevelopmentTeam = 3D8X943476;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -293,10 +301,13 @@
 				56BF9DAC1466C31565A41531 /* RewardsView.swift in Sources */,
 				6BA4D6070B4A7270ED77F3C0 /* RootView.swift in Sources */,
 				21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */,
+				47E6BC250332C48C45A3755A /* ScanHistoryStore.swift in Sources */,
+				2316C3BFC568A24BA5854161 /* ScanHistoryView.swift in Sources */,
 				AA7697BE144766A3E282E93F /* ScanResultView.swift in Sources */,
 				CFC407BD686E42EFCDEB3CD9 /* ScanView.swift in Sources */,
 				710586C15F2AE314BEC94466 /* ScoreDial.swift in Sources */,
 				E71692BE7550454E00CBB64A /* SignInView.swift in Sources */,
+				C52F65C474990F239F9AD731 /* SupabaseClient.swift in Sources */,
 				0982C5C5091F2032964B1BA9 /* SwapView.swift in Sources */,
 				B7542F1CADC0B4F50E8A9539 /* TabBarView.swift in Sources */,
 				DB959D8E42F72547F541E934 /* Theme.swift in Sources */,
@@ -383,6 +394,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGNING_ALLOWED[sdk=iphoneos*]" = YES;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				"CODE_SIGNING_REQUIRED[sdk=iphoneos*]" = YES;
+				"CODE_SIGNING_REQUIRED[sdk=iphonesimulator*]" = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -448,6 +463,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGNING_ALLOWED[sdk=iphoneos*]" = YES;
+				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
+				"CODE_SIGNING_REQUIRED[sdk=iphoneos*]" = YES;
+				"CODE_SIGNING_REQUIRED[sdk=iphonesimulator*]" = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";

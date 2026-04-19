@@ -24,6 +24,10 @@
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Clens uses the camera to scan product barcodes, labels, and grocery receipts so it can show your Ocean Score.</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string></string>
+	<key>SUPABASE_URL</key>
+	<string></string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

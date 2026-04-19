@@ -15,7 +15,6 @@ struct RootView: View {
                     content
                     if !router.showsScan {
                         TabBarView()
-                            .ignoresSafeArea(.container, edges: .bottom)
                     }
                 }
             }
@@ -35,6 +34,8 @@ struct RootView: View {
                 SwapView(pid: pid)
             case .receipt:
                 ReceiptResultView()
+            case .scanHistory:
+                ScanHistoryView()
             }
         } else {
             switch router.tab {

@@ -6,25 +6,27 @@ import SwiftUI
 struct LineIcon: View {
     var size: CGFloat = 24
     var stroke: CGFloat = 1.75
-    let path: (inout Path) -> Void
+    let path: @Sendable (inout Path) -> Void
 
     var body: some View {
-        Canvas { ctx, canvasSize in
-            var p = Path()
-            path(&p)
-            // Scale to canvas
-            let scale = canvasSize.width / 24
-            let transform = CGAffineTransform(scaleX: scale, y: scale)
-            let scaled = p.applying(transform)
-            ctx.stroke(scaled, with: .color(.primary),
-                       style: StrokeStyle(lineWidth: stroke, lineCap: .round, lineJoin: .round))
-        }
-        .frame(width: size, height: size)
+        IconShape(builder: path)
+            .stroke(style: StrokeStyle(lineWidth: stroke, lineCap: .round, lineJoin: .round))
+            .frame(width: size, height: size)
+    }
+}
+
+private struct IconShape: Shape {
+    let builder: @Sendable (inout Path) -> Void
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        builder(&p)
+        let scale = rect.width / 24
+        return p.applying(CGAffineTransform(scaleX: scale, y: scale))
     }
 }
 
 // Helper to keep call sites short
-private func icon(_ size: CGFloat = 24, _ build: @escaping (inout Path) -> Void) -> some View {
+private func icon(_ size: CGFloat = 24, _ build: @escaping @Sendable (inout Path) -> Void) -> some View {
     LineIcon(size: size, path: build)
 }
 
