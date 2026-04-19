@@ -305,7 +305,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error
 import anthropic
 
 # Make sure ANTHROPIC_API_KEY is set above this cell:
-os.environ.setdefault("ANTHROPIC_API_KEY", "")  # set externally; see ios/Clens/Secrets.xcconfig for the iOS build
+os.environ["ANTHROPIC_API_KEY"] = "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"
 client = anthropic.Anthropic()
 
 print("="*60)
@@ -543,3 +543,87 @@ for fname in uploaded:
 #print(score_real("3017620422003"))
 
 #why is it all taking so long too
+
+# ============================================================
+# CELL 10 — Image upload → OceanScore + live-growing dashboard
+# ============================================================
+import matplotlib.pyplot as plt
+from google.colab import files
+from IPython.display import clear_output
+
+# Persistent list of everything user has scanned this session
+if "scanned" not in dir():
+    scanned = []
+
+def scan_one():
+    """Upload one image, score it, append to dashboard."""
+    print("📷 Upload a product photo (with visible barcode):")
+    uploaded = files.upload()
+    if not uploaded: return
+
+    fname = list(uploaded.keys())[0]
+
+    # Image → barcode
+    barcodes = image_to_barcode(fname)
+    if not barcodes:
+        print("❌ No barcode detected — try a clearer photo")
+        return
+    bc = barcodes[0]
+    print(f"   ✓ Barcode read: {bc}")
+
+    # Barcode → OceanScore
+    result = score_real(bc)
+    if not result:
+        print(f"❌ Product not found in OFF for {bc}")
+        return
+
+    scanned.append({"product": result["name"], **result})
+
+    # ---- Print this scan ----
+    print(f"\n   📦 {result['name']}")
+    print(f"   CO₂:     {result['co2']} kg/kg")
+    print(f"   EF:      {result['ef']}")
+    print(f"   Plastic: {result['plastic']}")
+    print(f"   Source:  {result['source']}")
+    print(f"   ─────────────────")
+    print(f"   🌊 OCEANSCORE: {result['OceanScore']}/100")
+
+    # ---- Rebuild the 3-panel dashboard with all scans so far ----
+    df_scans = pd.DataFrame(scanned).sort_values("OceanScore")
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4))
+
+    # Panel 1: ocean stress (always the same — it's about the ocean, not products)
+    stress_series.resample("1D").mean().plot(ax=axes[0], color="steelblue")
+    axes[0].axhline(1.0, color="k", ls="--", alpha=0.4, label="normal")
+    axes[0].set_title(f"Ocean Stress Index (current: {current_stress:.2f})")
+    axes[0].set_ylabel("stress (0=calm, 2=stressed)"); axes[0].legend()
+
+    # Panel 2: bar chart of products user has scanned so far
+    colors = ["#2ecc71" if s>=70 else "#f39c12" if s>=40 else "#e74c3c"
+              for s in df_scans["OceanScore"]]
+    axes[1].barh(df_scans["product"], df_scans["OceanScore"], color=colors)
+    axes[1].set_xlim(0, 100)
+    axes[1].set_title(f"Your scanned products ({len(df_scans)})")
+    axes[1].set_xlabel("OceanScore (0=worst, 100=best)")
+
+    # Panel 3: cumulative average + best/worst summary
+    avg = df_scans["OceanScore"].mean()
+    axes[2].text(0.5, 0.7, f"{avg:.0f}", ha="center", va="center",
+                 fontsize=60, color="teal", transform=axes[2].transAxes)
+    axes[2].text(0.5, 0.45, "your basket avg", ha="center",
+                 transform=axes[2].transAxes)
+    if len(df_scans) >= 2:
+        worst = df_scans.iloc[0]; best = df_scans.iloc[-1]
+        axes[2].text(0.5, 0.2,
+                     f"best: {best['product']} ({best['OceanScore']})\n"
+                     f"worst: {worst['product']} ({worst['OceanScore']})",
+                     ha="center", transform=axes[2].transAxes, fontsize=9)
+    axes[2].axis("off")
+    axes[2].set_title("Basket score")
+
+    plt.tight_layout(); plt.show()
+
+
+# ===== RUN =====
+scan_one()
