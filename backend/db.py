@@ -89,6 +89,7 @@ def _databricks_conn():
         server_hostname=DATABRICKS_HOST,
         http_path=DATABRICKS_HTTP_PATH,
         access_token=DATABRICKS_TOKEN,
+        _socket_timeout=5,
     )
     try:
         yield conn
@@ -169,6 +170,7 @@ def get_profile_from_databricks(user_id: str) -> dict[str, Any] | None:
 
 
 def check_duplicate(*, email: str, username: str) -> list[str]:
+    # Skip during cold start — Supabase Auth will reject duplicate emails anyway
     if not is_databricks_configured():
         return []
     try:

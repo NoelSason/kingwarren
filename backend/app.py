@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from db import (
     FLASK_SECRET_KEY,
-    check_duplicate,
     create_account,
     get_config_error,
     get_profile_snapshot,
@@ -103,17 +103,6 @@ def signup_route():
 
     errors = validate_signup_form(form)
 
-    if not errors:
-        try:
-            dup_errors = check_duplicate(
-                email=normalize_email(form["email"]),
-                username=form["username"].strip().lower(),
-            )
-            errors.extend(dup_errors)
-        except Exception as exc:
-            flash(str(exc), "error")
-            return render_template("auth.html", mode="signup", form=form, configured=True, config_error=None), 400
-
     if errors:
         for error in errors:
             flash(error, "error")
@@ -150,16 +139,19 @@ def signup_route():
     store_auth_session(response)
 
     if user_id and is_databricks_configured():
-        try:
-            upsert_profile(
-                user_id=user_id,
-                email=normalize_email(form["email"]),
-                username=form["username"].strip().lower(),
-                display_name=form["display_name"].strip(),
-                seabucks=0,
-            )
-        except Exception as exc:
-            flash(f"Profile saved to auth but Databricks write failed: {exc}", "error")
+        def _write_profile():
+            try:
+                upsert_profile(
+                    user_id=user_id,
+                    email=normalize_email(form["email"]),
+                    username=form["username"].strip().lower(),
+                    display_name=form["display_name"].strip(),
+                    seabucks=0,
+                )
+            except Exception:
+                pass
+
+        threading.Thread(target=_write_profile, daemon=True).start()
     store_profile_preview(
         email=normalize_email(form["email"]),
         username=form["username"].strip().lower(),
