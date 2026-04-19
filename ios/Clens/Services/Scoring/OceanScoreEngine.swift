@@ -79,9 +79,25 @@ enum OceanScoreEngine {
         )
     }
 
-    // Cell 6 ocean_score(category, stress_idx) from project_oceanscore.py.
-    // Returns the four component factors (0-1, higher = better) plus the
-    // composite 0-100 score so both score() and uiBreakdown() share the math.
+    // Every bar is a "goodness" factor on 0..1 (higher = better, lower = worse),
+    // stress-amplified uniformly so any non-zero raw impact gets punished
+    // harder when the ocean is stressed:
+    //   goodness = max(0, 1 - raw_intensity * stressIndex)
+    // A perfectly-zero-impact item stays 1.0 regardless of stress; stress
+    // only scales the penalty for non-zero impacts.
+    private static func stressed(_ intensity: Double, stress: Double) -> Double {
+        max(0.0, min(1.0, 1.0 - intensity * stress))
+    }
+
+    // Agribalyse EF single-score distribution is heavy-right-tailed: the ~95th
+    // percentile lands near 1.5 and the absolute worst (beef / lamb) reaches
+    // ~2.5. Normalizing against 2.5 keeps typical products in the usable
+    // middle of the scale while still saturating the genuine worst case.
+    private static let worstAgribalyseEF: Double = 2.5
+    private static let worstAgribalyseCO2: Double = 30.0
+
+    // Four goodness factors (0..1, higher=better) plus the composite 0..100 score.
+    // Used by both the agribalyse/Cell-8 path and the category/Cell-6 fallback.
     struct CategoryFactors {
         let co2: Double
         let runoff: Double
@@ -93,11 +109,43 @@ enum OceanScoreEngine {
     static func categoryFactors(for category: FoodCategory, stressIndex: Double) -> CategoryFactors {
         let f = CategoryImpacts.impactFactors[category]
             ?? CategoryImpacts.impactFactors[.vegetables]!
-        let co2     = 1.0 - min(f.co2 / CategoryImpacts.worstCO2, 1.0)
-        let runoff  = 1.0 - min((f.runoff * stressIndex) / (CategoryImpacts.worstRunoff * 1.5), 1.0)
-        let plastic = 1.0 - f.plastic
-        let water   = 1.0 - min(f.water / CategoryImpacts.worstWater, 1.0)
+        let co2I     = min(f.co2     / CategoryImpacts.worstCO2,     1.0)
+        let runoffI  = min(f.runoff  / CategoryImpacts.worstRunoff,  1.0)
+        let plasticI = min(f.plastic / CategoryImpacts.worstPlastic, 1.0)
+        let waterI   = min(f.water   / CategoryImpacts.worstWater,   1.0)
+
+        let co2     = stressed(co2I,     stress: stressIndex)
+        let runoff  = stressed(runoffI,  stress: stressIndex)
+        let plastic = stressed(plasticI, stress: stressIndex)
+        let water   = stressed(waterI,   stress: stressIndex)
+
         let composite = 0.35 * co2 + 0.30 * runoff + 0.20 * plastic + 0.15 * water
+        let score = max(0, min(100, Int((100.0 * composite).rounded())))
+        return CategoryFactors(co2: co2, runoff: runoff, plastic: plastic, water: water, score: score)
+    }
+
+    // Cell 8 agribalyse path with the same uniform stress treatment — plastic
+    // and water now get stress-penalized too, not just runoff.
+    static func agribalyseFactors(
+        co2Kg: Double,
+        ef: Double,
+        plasticScore: Double?,
+        waterScore: Double?,
+        stressIndex: Double
+    ) -> CategoryFactors {
+        let co2I     = min(co2Kg / worstAgribalyseCO2, 1.0)
+        let efI      = min(ef    / worstAgribalyseEF,  1.0)
+        // plasticScore / waterScore are stored as pre-stress goodness values,
+        // so invert them to get the raw intensity before re-applying stress.
+        let plasticI = 1.0 - (plasticScore ?? 0.5)
+        let waterI   = 1.0 - (waterScore ?? 0.5)
+
+        let co2     = stressed(co2I,     stress: stressIndex)
+        let runoff  = stressed(efI,      stress: stressIndex)
+        let plastic = stressed(plasticI, stress: stressIndex)
+        let water   = stressed(waterI,   stress: stressIndex)
+
+        let composite = 0.30 * co2 + 0.30 * runoff + 0.25 * plastic + 0.15 * water
         let score = max(0, min(100, Int((100.0 * composite).rounded())))
         return CategoryFactors(co2: co2, runoff: runoff, plastic: plastic, water: water, score: score)
     }
@@ -105,23 +153,20 @@ enum OceanScoreEngine {
     static func score(_ item: FoodItem, stressIndex: Double) -> Scored {
         let score: Int
         if let co2Kg = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
-            // Cell 8 score_real() from project_oceanscore.py.
-            //   0.30*co2 + 0.30*runoff + 0.25*plastic_score + 0.15*water_score
-            let co2Term    = 1.0 - min(co2Kg / 30.0, 1.0)
-            let efNorm     = 1.0 - min(ef / 1.0, 1.0)
-            let runoffTerm = efNorm * (2.0 - stressIndex) / 2.0
-            let plasticScore = item.plasticScore ?? 0.5
-            let waterScore   = item.waterScore ?? 0.5
-            let composite  = 0.30 * co2Term + 0.30 * runoffTerm + 0.25 * plasticScore + 0.15 * waterScore
-            score = max(0, min(100, Int((100.0 * composite).rounded())))
-            ScanLog.step(12, "scoring branch=AGRIBALYSE (Cell 8 formula, nuanced plastic + water)")
-            ScanLog.step(13, String(format: "  co2=%.2f ef_norm=%.2f runoff=%.2f plastic_score=%.2f water_score=%.2f → composite=%.3f → score=%d",
-                                    co2Term, efNorm, runoffTerm, plasticScore, waterScore, composite, score))
+            let f = agribalyseFactors(
+                co2Kg: co2Kg, ef: ef,
+                plasticScore: item.plasticScore,
+                waterScore: item.waterScore,
+                stressIndex: stressIndex
+            )
+            score = f.score
+            ScanLog.step(12, "scoring branch=AGRIBALYSE (uniform stress across all 4 factors)")
+            ScanLog.step(13, String(format: "  co2=%.2f runoff=%.2f plastic=%.2f water=%.2f stress=%.2f → score=%d",
+                                    f.co2, f.runoff, f.plastic, f.water, stressIndex, score))
         } else {
-            // Category-baseline fallback — Cell 6 ocean_score().
             let f = categoryFactors(for: item.category, stressIndex: stressIndex)
             score = f.score
-            ScanLog.step(12, "scoring branch=CATEGORY-BASELINE (Cell 6 ocean_score)")
+            ScanLog.step(12, "scoring branch=CATEGORY-BASELINE (uniform stress across all 4 factors)")
             ScanLog.step(13, String(format: "  co2=%.2f runoff=%.2f plastic=%.2f water=%.2f stress=%.2f → score=%d",
                                     f.co2, f.runoff, f.plastic, f.water, stressIndex, score))
         }
@@ -148,40 +193,33 @@ enum OceanScoreEngine {
         }
     }
 
-    // Convert backend penalty (higher=worse) to UI breakdown value (higher=better)
-    // so the existing ScanResultView breakdown row renders naturally.
+    // All four bars are "goodness" on 0..100 (higher = better, lower = worse).
+    // Same factor math as score() so the bars always track the composite.
     static func uiBreakdown(from item: FoodItem, stressIndex: Double) -> Product.Breakdown {
+        let f: CategoryFactors
+        let branch: String
         if let co2Kg = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
-            // Mirrors the Cell 8 factor math so bars track the final score.
-            let co2 = 1.0 - min(co2Kg / 30.0, 1.0)
-            let efNorm = 1.0 - min(ef / 1.0, 1.0)
-            let runoff = efNorm * (2.0 - stressIndex) / 2.0
-            let plasticScore = item.plasticScore ?? 0.5
-            let waterScore   = item.waterScore ?? 0.5
-            let bClimate = Int((100.0 * co2).rounded())
-            let bRunoff  = Int((100.0 * runoff).rounded())
-            let bPlastic = Int((100.0 * plasticScore).rounded())
-            let bWater   = Int((100.0 * waterScore).rounded())
-            ScanLog.step(15, "breakdown (agribalyse): climate=\(bClimate) runoff=\(bRunoff) plastic=\(bPlastic) water=\(bWater)")
-            return Product.Breakdown(
-                climate: bClimate,
-                runoff:  bRunoff,
-                plastic: bPlastic,
-                water:   bWater
+            f = agribalyseFactors(
+                co2Kg: co2Kg, ef: ef,
+                plasticScore: item.plasticScore,
+                waterScore: item.waterScore,
+                stressIndex: stressIndex
             )
+            branch = "agribalyse"
+        } else {
+            f = categoryFactors(for: item.category, stressIndex: stressIndex)
+            branch = "category"
         }
-        // Cell 6 ocean_score() component factors → UI bars (0-100, higher = better).
-        let f = categoryFactors(for: item.category, stressIndex: stressIndex)
-        let climateDisp = Int((100.0 * f.co2).rounded())
-        let runoffDisp  = Int((100.0 * f.runoff).rounded())
-        let plasticDisp = Int((100.0 * f.plastic).rounded())
-        let waterDisp   = Int((100.0 * f.water).rounded())
-        ScanLog.step(15, "breakdown (Cell 6): climate=\(climateDisp) runoff=\(runoffDisp) plastic=\(plasticDisp) water=\(waterDisp)")
+        let bClimate = Int((100.0 * f.co2).rounded())
+        let bRunoff  = Int((100.0 * f.runoff).rounded())
+        let bPlastic = Int((100.0 * f.plastic).rounded())
+        let bWater   = Int((100.0 * f.water).rounded())
+        ScanLog.step(15, "breakdown (\(branch)): climate=\(bClimate) runoff=\(bRunoff) plastic=\(bPlastic) water=\(bWater)")
         return Product.Breakdown(
-            climate: climateDisp,
-            runoff:  runoffDisp,
-            plastic: plasticDisp,
-            water:   waterDisp
+            climate: bClimate,
+            runoff:  bRunoff,
+            plastic: bPlastic,
+            water:   bWater
         )
     }
 

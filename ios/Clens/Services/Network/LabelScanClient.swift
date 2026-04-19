@@ -18,12 +18,14 @@ enum LabelScanClient {
     }
 
     // Cell 8 llm_estimate() output — used when OFF returns a product but
-    // Agribalyse lifecycle data / packagings data is missing.
+    // Agribalyse lifecycle data / packagings data is missing. Every field is
+    // optional so callers can tell when the LLM genuinely did not return a
+    // value vs. returning something; we never fabricate a default here.
     struct EnvEstimate {
-        let co2TotalKg: Double
-        let efTotal: Double
-        let plasticScore: Double     // 0.0 (heavy non-recyclable plastic) → 1.0 (no plastic)
-        let waterLitersPerKg: Int
+        let co2TotalKg: Double?
+        let efTotal: Double?
+        let plasticScore: Double?     // 0.0 (heavy non-recyclable plastic) → 1.0 (no plastic)
+        let waterLitersPerKg: Int?
         let estimatedEcoscore: Int?
     }
 
@@ -189,14 +191,36 @@ enum LabelScanClient {
 
     // Cell 8 llm_estimate() from project_oceanscore.py — used when OFF returns
     // a product but Agribalyse lifecycle data or packagings info is missing.
-    // Claude estimates co2_total_kg, ef_total, plastic_score (0-1), and
-    // water_l_per_kg from the product name (and front image URL if available).
+    // Claude estimates co2_total_kg, ef_total, plastic_intensity (0-1, higher=
+    // more plastic = worse), and water_l_per_kg from the product name (and
+    // front image URL if available). plastic_intensity is inverted on parse
+    // into the internal plasticScore (0=bad, 1=good) the scoring engine expects.
     private static let envEstimatePrompt = """
-    Return ONLY a JSON object, no markdown, no code fences, no commentary:
+    Return ONLY a JSON object, no markdown, no code fences, no commentary.
+
+    plastic_intensity is a continuous 0.00–1.00 rating of how much of the product's
+    total packaging mass is plastic, weighted by how hard that plastic is to recycle.
+    HIGHER = MORE PLASTIC = WORSE. Do NOT snap to 0.0, 0.3, or 1.0 — pick a value
+    that reflects the actual packaging. Use two decimals.
+
+    Rubric (calibrate against these):
+      0.00  glass bottle with metal cap, no plastic at all
+      0.05  aluminum can, only trace plastic liner
+      0.15  glass jar with plastic lid, or cardboard box with small plastic window
+      0.30  paperboard carton with plastic inner pouch, or mostly-cardboard multipack
+      0.45  aseptic carton (Tetra Pak) — layered paper/plastic/foil
+      0.60  PET bottle with paper label (e.g. most bottled water, soda)
+      0.75  thick rigid plastic tub/jug, or PET bottle with plastic sleeve
+      0.90  multilayer flexible plastic pouch / chip bag / snack wrapper
+      1.00  heavy non-recyclable plastic, clamshell + film, or polystyrene foam
+
+    Pick the rubric anchor nearest the product, then nudge ±0.05 based on what
+    you can actually see (label material, cap, sleeve, secondary packaging).
+
     {
       "co2_total_kg": <float, kg CO2-eq per kg, typical 0.5-50>,
       "ef_total": <float, environmental footprint 0.0-1.5, includes eutrophication>,
-      "plastic_score": <float 0.0-1.0, where 0=heavy non-recyclable plastic, 1.0=no plastic>,
+      "plastic_intensity": <float 0.00-1.00, higher = more plastic = worse, see rubric>,
       "water_l_per_kg": <int, liters of freshwater per kg, typical 100-15000>,
       "estimated_ecoscore": <int 0-100, 100=best>
     }
@@ -205,7 +229,8 @@ enum LabelScanClient {
     private struct EnvEstimateJSON: Decodable {
         let co2_total_kg: Double?
         let ef_total: Double?
-        let plastic_score: Double?
+        let plastic_intensity: Double?
+        let plastic_score: Double?   // legacy field, kept for graceful fallback
         let water_l_per_kg: Int?
         let estimated_ecoscore: Int?
     }
@@ -285,16 +310,37 @@ enum LabelScanClient {
         guard let jsonData = json.data(using: .utf8) else { throw LabelError.decoding }
         let parsed = try JSONDecoder().decode(EnvEstimateJSON.self, from: jsonData)
 
+        // Prefer the new plastic_intensity field (higher = more plastic = worse)
+        // and invert to the internal plasticScore (higher = better). Fall back
+        // to the legacy plastic_score field if the model ignored the new schema.
+        // If neither is present we leave plasticScore nil — no hardcoded 0.5.
+        let plasticScoreOut: Double?
+        let loggedIntensity: String
+        if let i = parsed.plastic_intensity {
+            let clamped = max(0.0, min(1.0, i))
+            plasticScoreOut = 1.0 - clamped
+            loggedIntensity = String(format: "%.2f", clamped)
+        } else if let legacy = parsed.plastic_score {
+            let clamped = max(0.0, min(1.0, legacy))
+            plasticScoreOut = clamped
+            loggedIntensity = String(format: "%.2f (legacy)", 1.0 - clamped)
+        } else {
+            plasticScoreOut = nil
+            loggedIntensity = "nil"
+        }
         let est = EnvEstimate(
-            co2TotalKg: parsed.co2_total_kg ?? 5.0,
-            efTotal: parsed.ef_total ?? 0.5,
-            plasticScore: max(0.0, min(1.0, parsed.plastic_score ?? 0.5)),
-            waterLitersPerKg: parsed.water_l_per_kg ?? 2000,
+            co2TotalKg: parsed.co2_total_kg,
+            efTotal: parsed.ef_total,
+            plasticScore: plasticScoreOut,
+            waterLitersPerKg: parsed.water_l_per_kg,
             estimatedEcoscore: parsed.estimated_ecoscore
         )
-        ScanLog.llm(9, String(format: "estimate parsed: co2=%.2f ef=%.2f plastic_score=%.2f water_L=%d ecoscore=%@",
-                              est.co2TotalKg, est.efTotal,
-                              est.plasticScore, est.waterLitersPerKg,
+        ScanLog.llm(9, String(format: "estimate parsed: co2=%@ ef=%@ plastic_intensity=%@ plastic_score=%@ water_L=%@ ecoscore=%@",
+                              est.co2TotalKg.map { String(format: "%.2f", $0) } ?? "nil",
+                              est.efTotal.map { String(format: "%.2f", $0) } ?? "nil",
+                              loggedIntensity,
+                              est.plasticScore.map { String(format: "%.2f", $0) } ?? "nil",
+                              est.waterLitersPerKg.map { "\($0)" } ?? "nil",
                               est.estimatedEcoscore.map { "\($0)" } ?? "nil"))
         return est
     }

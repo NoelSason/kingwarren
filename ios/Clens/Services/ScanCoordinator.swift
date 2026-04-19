@@ -45,34 +45,51 @@ final class ScanCoordinator: ObservableObject {
             var item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
             ScanLog.step(10, "FoodItem built: name='\(item.normalizedName)' brand='\(item.brand)' category=\(item.category.rawValue) organic=\(item.isOrganic) packaging=\(item.packagingType.rawValue)")
 
-            // Python Cell 8 skip-LLM rule: only the agribalyse + OFF-packagings
-            // path avoids the LLM call. Water stays neutral (0.5) in that case.
-            let hasCO2 = item.agribalyseCO2Kg != nil
+            // No pre-LLM hardcoding of water or plastic. The only truths are:
+            //   • OFF Agribalyse → co2Kg / ef
+            //   • OFF packagings → plasticScore
+            //   • LLM estimate   → fills whatever OFF left nil (including water,
+            //                      which OFF never provides)
+            // If the LLM is unavailable or the specific field is absent from
+            // its response, the field stays nil and scoring falls through to
+            // the category baseline branch. Nothing is defaulted to 0.5 / 2000
+            // before the LLM has a chance to speak.
+            let hasCO2     = item.agribalyseCO2Kg != nil && item.agribalyseEF != nil
             let hasPlastic = item.plasticScore != nil
-            if hasCO2 && hasPlastic {
-                item.waterLitersPerKg = 2000
-                item.waterScore = 0.5
-                ScanLog.step(11, "agribalyse+packagings complete — skipping LLM, water neutral (0.5)")
-            } else if LabelScanClient.isConfigured {
-                ScanLog.step(11, "missing \(hasCO2 ? "" : "co2/ef ")\(hasPlastic ? "" : "plastic_score ")— calling LLM estimate")
+            let hasWater   = item.waterScore != nil
+            let needsLLM   = !(hasCO2 && hasPlastic && hasWater)
+
+            if needsLLM && LabelScanClient.isConfigured {
+                let missing = [hasCO2 ? nil : "co2/ef", hasPlastic ? nil : "plastic", hasWater ? nil : "water"]
+                    .compactMap { $0 }.joined(separator: ",")
+                ScanLog.step(11, "LLM needed — missing: \(missing)")
                 status = .busy("Estimating impact…")
                 do {
                     let est = try await LabelScanClient.estimateEnvironmental(
                         productName: item.normalizedName,
                         imageURL: item.imageFrontURL
                     )
-                    if item.agribalyseCO2Kg == nil { item.agribalyseCO2Kg = est.co2TotalKg }
-                    if item.agribalyseEF == nil { item.agribalyseEF = est.efTotal }
-                    if item.plasticScore == nil { item.plasticScore = est.plasticScore }
-                    item.waterLitersPerKg = est.waterLitersPerKg
-                    item.waterScore = 1.0 - min(Double(est.waterLitersPerKg) / 15000.0, 1.0)
-                    ScanLog.step(11, String(format: "LLM estimate applied: plastic_score=%.2f water_L=%d water_score=%.2f",
-                                            item.plasticScore ?? 0.5, item.waterLitersPerKg ?? 0, item.waterScore ?? 0.5))
+                    // Only fill fields that are currently nil, and only from
+                    // LLM values that are actually present. Never overwrite
+                    // true OFF data, never hardcode a default.
+                    if item.agribalyseCO2Kg == nil, let v = est.co2TotalKg      { item.agribalyseCO2Kg = v }
+                    if item.agribalyseEF    == nil, let v = est.efTotal         { item.agribalyseEF    = v }
+                    if item.plasticScore    == nil, let v = est.plasticScore    { item.plasticScore    = v }
+                    if item.waterScore      == nil, let v = est.waterLitersPerKg {
+                        item.waterLitersPerKg = v
+                        item.waterScore = 1.0 - min(Double(v) / 15000.0, 1.0)
+                    }
+                    ScanLog.step(11, String(format: "LLM estimate applied: plastic_score=%@ water_L=%@ water_score=%@",
+                                            item.plasticScore.map { String(format: "%.2f", $0) } ?? "nil",
+                                            item.waterLitersPerKg.map { "\($0)" } ?? "nil",
+                                            item.waterScore.map { String(format: "%.2f", $0) } ?? "nil"))
                 } catch {
-                    ScanLog.step(11, "LLM estimate FAILED (\(error)) — falling back to category baseline")
+                    ScanLog.step(11, "LLM estimate FAILED (\(error)) — leaving missing fields nil; scoring will use category baseline for those dimensions")
                 }
+            } else if needsLLM {
+                ScanLog.step(11, "LLM not configured — leaving missing fields nil; scoring will use category baseline for those dimensions")
             } else {
-                ScanLog.step(11, "no agribalyse data AND LLM not configured — falling back to category baseline")
+                ScanLog.step(11, "OFF returned full co2/ef/plastic/water — no LLM call needed")
             }
             let product = OceanScoreEngine.uiProduct(from: item, stressIndex: ocean.stressIndex)
             ScanLog.step(17, "product ready: id='\(product.id)' score=\(product.score) displayPoints=\(Int(Double(product.score) * 1.6)) facts=\(product.facts.count)")
