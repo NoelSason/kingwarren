@@ -4,6 +4,8 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+*.xcuserstate
+xcuserdata/
 
 # Per-developer secrets (API keys). Each dev creates their own.
 ios/Clens/Secrets.xcconfig
