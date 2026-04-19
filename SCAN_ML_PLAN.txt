@@ -1,0 +1,174 @@
+# Auto-Routing Scan: On-Device Receipt vs. Barcode ML
+
+## Context
+
+Today the scan screen (`ios/Clens/Screens/ScanView.swift`) requires the user to manually tap "Item" / "Receipt" / "Recycle" tabs before pointing the camera. That manual step is clunky and makes the demo weaker — judges want to see the phone *understand* what it's looking at.
+
+We'll replace that decision with an on-device, real-time classifier:
+
+- **Barcodes**: keep using `AVCaptureMetadataOutput` (already wired up in `CameraService.swift`) — it's near-perfect and free.
+- **Receipts**: train a small custom Core ML classifier on the ExpressExpense SRD dataset already sitting in `/Users/noelsason/Desktop/DataHacks/Receipt ML/large-receipt-image-dataset-SRD (1)/` (200 JPGs). A thin Swift `AutoRouteController` watches both signals and flips `router.scanMode` automatically.
+
+This keeps the "our own ML" story prominent (live receipt detection from camera frames) while spending zero training budget on a class that Apple already solves. Outcome: aim the phone at a receipt → it auto-routes to Receipt mode; aim at a product → barcode fires and routes to Item mode; aim at anything else → stays idle.
+
+## Architecture
+
+```
+Camera frame (30 fps from AVCaptureSession)
+    │
+    ├──► AVCaptureMetadataOutput ─► barcode string ─► lastBarcodeObservedAt
+    │                                                           │
+    └──► FrameSampler (throttles to 6 fps) ─► ScanClassifier    │
+                                                    │           │
+                                                    ▼           ▼
+                                         AutoRouteController.update()
+                                                    │
+                                                    ▼
+                                    router.scanMode = .product / .receipt
+                                                    │
+                                                    ▼
+                                       existing ScanCoordinator flow
+```
+
+Key decision: both signals feed one `AutoRouteController` that owns a small hysteresis state machine. No existing downstream code (`ScanCoordinator`, `ReceiptOCRService`, OpenFoodFacts) changes — we only automate *which mode* is active.
+
+## Training data plan
+
+**Receipt class (positive)** — ready to use:
+- `/Users/noelsason/Desktop/DataHacks/Receipt ML/large-receipt-image-dataset-SRD (1)/*.jpg` — 200 images.
+- Split: 160 train / 40 validation. Keep filenames; Create ML only cares about folder structure.
+
+**Other class (negative)** — needs sourcing:
+- Download COCO val2017 (~6 GB, or use the ~1 GB `val2017` subset). Randomly sample 150 JPGs — hands, tables, people, scenes. Filters out the easy case.
+- Supplement with **~50 team self-captures** of product packaging, cereal boxes, barcoded grocery items held at scan distance. These are the adversarial negatives — they're paper-rectangular-with-text and would confuse a receipt-only classifier. 20 minutes across the team.
+- Total target: ~200 negatives. Split: 160 train / 40 validation.
+
+**Final folder layout** for Create ML (create this at `/Users/noelsason/Desktop/DataHacks/Receipt ML/dataset/`):
+
+```
+dataset/
+  train/
+    receipt/   (160 images)
+    other/     (160 images)
+  validation/
+    receipt/   (40 images)
+    other/     (40 images)
+```
+
+## Training pipeline — Create ML app (not Python)
+
+Create ML.app ships with Xcode; total wall-clock is ~20 minutes.
+
+1. Open **Create ML → New Project → Image Classification**.
+2. Training Data: `dataset/train/`. Validation Data: `dataset/validation/`.
+3. **Algorithm: "Transfer Learning"** with feature extractor = **Image Feature Print (Vision)**.
+   - Ships a ~1 MB `.mlmodel` (vs. 9–15 MB for Full Network MobileNet).
+   - Runs on Neural Engine in ~15 ms. Zero tradeoff for binary classification on this scale.
+4. Augmentations: enable **Rotate, Blur, Noise, Flip (horizontal only)** — do not vertical-flip receipts.
+5. Max iterations: 25 (default).
+6. Train. Watch validation accuracy — expect >95%.
+7. Export as `ReceiptClassifier.mlmodel`. Drop into `ios/Clens/Resources/ML/ReceiptClassifier.mlmodel`.
+
+Why not Python + `coremltools`: half a day of PyTorch plumbing and export-version debugging for no accuracy win on this task.
+
+## iOS integration — exact files
+
+### New files
+
+**`ios/Clens/Services/ML/ScanClassifier.swift`** — wraps the Core ML model behind `VNCoreMLRequest`.
+- Loads compiled `ReceiptClassifier.mlmodelc` from main bundle (Xcode compiles `.mlmodel` at build time).
+- Serial `DispatchQueue` "ml.classifier".
+- `func classify(pixelBuffer:orientation:) async -> Prediction?` returning `(label: .receipt/.other, confidence: Float)`.
+- `imageCropAndScaleOption = .centerCrop` so Vision handles resize to the model's expected input.
+- Returns `nil` on any failure — caller is a frame pump and shouldn't branch on errors.
+- Init is failable (`init?`). If the model fails to load, auto-routing silently disables and manual tabs remain.
+
+**`ios/Clens/Services/ML/AutoRouteController.swift`** — the hysteresis brain. `@MainActor`, `ObservableObject`.
+- `@Published private(set) var detection: Detection` (`.idle / .barcode / .receipt`) for UI binding.
+- `@Published var enabled: Bool` — flips to `false` when user taps a mode tab manually.
+- Tuning constants (hardcoded, tweak during rehearsal):
+  - `receiptConfThreshold: Float = 0.75`
+  - `framesToCommit: Int = 5` (~0.8 s at 6 fps)
+  - `cooldownAfterSwitch: TimeInterval = 2.0`
+- Streak counters: `receiptStreak`, `barcodeStreak`, `otherStreak`.
+- Core API: `func update(barcodeVisible: Bool, receiptPred: ScanClassifier.Prediction?) -> ScanMode?`
+  - Barcode visible for ≥2 consecutive ticks → commit `.product`.
+  - Receipt confidence ≥ threshold for ≥5 consecutive ticks → commit `.receipt`.
+  - After any commit, 2-second cooldown to prevent ping-pong.
+  - Returns `nil` when no change; caller sets `router.scanMode` only on non-nil.
+- `disableForManualOverride()` / `reenable()` for the manual-tab path.
+
+**`ios/Clens/Services/Camera/FrameSampler.swift`** — `AVCaptureVideoDataOutputSampleBufferDelegate` that throttles 30 fps → 6 fps and hands `CVPixelBuffer` to its delegate.
+- `alwaysDiscardsLateVideoFrames = true`.
+- Time-gate at the sample-buffer entry (`minInterval = 1.0/6.0`) — cheapest possible throttle, drop before any ML work.
+- Own `DispatchQueue` "camera.frames".
+- Exposes `attach(to: AVCaptureSession)`.
+
+**`ios/Clens/Resources/ML/ReceiptClassifier.mlmodel`** — training artifact from Create ML step. Checked in. ~1 MB.
+
+### Modified files
+
+**`ios/Clens/Services/Camera/CameraService.swift`** — small, surgical changes:
+1. Add `let frameSampler = FrameSampler()` as a stored property.
+2. In `configureIfNeeded()` (after `photoOutput` is added, ~line 126): `frameSampler.attach(to: session)`.
+3. Add `@MainActor @Published private(set) var lastBarcodeObservedAt: Date? = nil`.
+4. In the metadata delegate callback (line 163–176), update `lastBarcodeObservedAt` **unconditionally**; only update `lastDetectedBarcode` when `mode == .barcode`.
+5. **Critical**: change line 88 from `(newMode == .barcode) ? types : []` to always-on `supportedBarcodeTypes`. This lets us detect barcode presence even while the camera is in `.photo` (receipt) mode — required for auto-routing back to Item mode when the user swings the phone to a product. The existing `guard self.mode == .barcode` at line 171 still prevents stray barcode navigation while in receipt mode.
+
+**`ios/Clens/Screens/ScanView.swift`** — wire up the new controller:
+1. Add `@StateObject private var auto = AutoRouteController()` and own a `ScanClassifier?` (nil-safe — if the model didn't load, auto-routing is a no-op).
+2. In the `.task` block (line 52), set `camera.frameSampler.delegate = autoDelegate` where `autoDelegate` is a small helper that (a) calls `classifier.classify(...)`, (b) checks `camera.lastBarcodeObservedAt` recency (< 0.5 s), (c) calls `auto.update(barcodeVisible:receiptPred:)`, (d) applies the returned mode to `router.scanMode`. Simplest: make `AutoRouteController` conform to `FrameSamplerDelegate` and own the `ScanClassifier` internally so `ScanView` only wires the delegate.
+3. In `modeTab` action (line 232), add `auto.disableForManualOverride()` alongside `router.scanMode = mode`.
+4. Replace the bolt icon in `topChrome` (line 104–106) with a small "Auto ON / OFF" capsule bound to `auto.enabled` — lets the user re-enable auto-routing during a demo.
+5. Add a single line above `statusOrHint` showing `auto.detection`: "Detecting…" / "Receipt detected ✓" / "Barcode detected ✓". Styled with the existing 11 pt / 60 % white pattern. Don't touch the reticle geometry.
+
+### Do NOT modify
+
+- `ScanCoordinator.swift` — still dispatches on `router.scanMode`, no change needed.
+- `ReceiptOCRService.swift`, `LabelScanClient.swift`, `OpenFoodFactsClient` — all downstream of the mode decision.
+- `AppRouter.swift` — `ScanMode` enum already has the cases we need.
+- `project.yml` / `Info.plist` — Vision and CoreML are implicit; camera permission already granted. `ios/Clens/Resources/ML/*` is picked up by the existing `sources: path: Clens` glob in `project.yml:35`.
+
+### Reuse, don't duplicate
+
+- `CameraService.switchMode(to:)` — single programmatic entry point for camera mode.
+- `sessionMode(for:)` at `ScanView.swift:84` — single source of truth for `ScanMode → CameraService.Mode` mapping.
+- Existing `processing` flag — drives the glowing border at `ScanView.swift:133`. Detection state is orthogonal; don't merge them.
+
+## State machine (hysteresis)
+
+In plain English, to prevent mode flicker on ambiguous frames:
+
+- Barcode wins: 2 consecutive ticks of barcode visibility → flip to `.product`. Barcodes are already high-precision, so short streak is safe.
+- Receipt requires more evidence: 5 consecutive ticks of `receipt` @ confidence ≥ 0.75 → flip to `.receipt`. ~0.8 s at 6 fps classification.
+- After any mode switch, 2-second cooldown before another switch can happen. Prevents ping-pong when user pans the phone past the other class.
+- Any tap on a mode tab disables auto-routing until the "Auto" capsule is tapped to re-enable.
+
+## Verification
+
+1. **Unit test on `AutoRouteController` (30 min)** — new `ios/ClensTests/AutoRouteControllerTests.swift`. Feed synthetic tick sequences:
+   - 10× `receipt@0.9` → expect `.receipt` after tick 5.
+   - 4× `receipt@0.9` then `other` → expect no commit.
+   - Barcode + receipt simultaneously → barcode wins.
+   - Manual override: `disableForManualOverride()` → no commits until `reenable()`.
+
+2. **Classifier accuracy (20 min, optional)** — one-off Python script with `coremltools` loads `ReceiptClassifier.mlmodel`, runs over held-out 40 receipts + 40 others, prints precision/recall. Goal: receipt recall >90 %, precision >95 %.
+
+3. **On-device smoke test (30 min, pre-demo)** — build & run on a real iPhone (simulator has no camera). Walk through:
+   - Point at a physical receipt → auto-routes to Receipt within ~0.8 s.
+   - Point at a barcoded product → auto-routes to Item within ~0.3 s.
+   - Point at a table / hand / face → stays idle.
+   - Tap "Item" manually → stays in Item mode regardless of what camera sees.
+   - Tap "Auto ON" → auto-routing resumes.
+
+4. **Demo rehearsal** — pick and rehearse the exact receipt + exact product for judging. Classifiers trained on 160 images are brittle; don't discover a failure mode on stage.
+
+## Execution order (~8 hours)
+
+1. **T+0:00** — Build the `dataset/train/` and `dataset/validation/` folders (receipts from SRD + COCO + team packaging shots). ~90 min including downloads.
+2. **T+1:30** — Create ML training + export. ~30 min.
+3. **T+2:00** — Write `ScanClassifier.swift`, `AutoRouteController.swift`, `FrameSampler.swift`. Drop `.mlmodel` into Xcode. Run unit tests. ~90 min.
+4. **T+3:30** — Wire into `CameraService.swift` (always-on metadata types + lastBarcodeObservedAt) and `ScanView.swift` (delegate, UI, manual-override). ~90 min.
+5. **T+5:00** — On-device smoke test. Tune `framesToCommit` / `receiptConfThreshold` if needed. ~30 min.
+6. **T+5:30** — Demo rehearsal. ~30 min.
+7. **T+6:00+** — Buffer. Rest > marginal model improvement.
