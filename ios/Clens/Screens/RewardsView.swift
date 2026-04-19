@@ -26,9 +26,11 @@ struct RewardsView: View {
                 reward: reward,
                 balance: balance,
                 onConfirm: {
-                    if profileService.redeem(reward) {
-                        pendingRedeem = nil
-                        showSuccessFor = reward
+                    Task {
+                        if await profileService.redeem(reward) {
+                            pendingRedeem = nil
+                            showSuccessFor = reward
+                        }
                     }
                 },
                 onCancel: { pendingRedeem = nil }

@@ -23,7 +23,25 @@ final class AppRouter: ObservableObject {
     @Published var tab: Tab = .home
     @Published var stack: [Route] = []
     @Published var scanMode: ScanMode = .product
-    @Published var session: AuthSession?
+    @Published var session: AuthSession? {
+        didSet {
+            if let session {
+                SessionStore.save(session)
+                SupabaseClient.shared.setAccessToken(session.accessToken)
+            } else {
+                SessionStore.clear()
+                SupabaseClient.shared.setAccessToken(nil)
+            }
+        }
+    }
+
+    init() {
+        if let saved = SessionStore.load() {
+            self.session = saved
+            self.authed = true
+            SupabaseClient.shared.setAccessToken(saved.accessToken)
+        }
+    }
 
     var top: Route? { stack.last }
     var showsScan: Bool {
@@ -33,6 +51,13 @@ final class AppRouter: ObservableObject {
     func push(_ route: Route) { stack.append(route) }
     func pop() { _ = stack.popLast() }
     func reset() { stack.removeAll() }
+
+    func signOut() {
+        stack.removeAll()
+        tab = .home
+        session = nil
+        authed = false
+    }
 
     func selectTab(_ next: Tab) {
         reset()

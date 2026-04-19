@@ -94,3 +94,87 @@ end;
 $$;
 
 grant execute on function public.add_seabucks(int) to authenticated;
+
+create table if not exists public.claimed_rewards (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.profiles (id) on delete cascade,
+    reward_id text not null,
+    reward_brand text not null default '',
+    reward_title text not null default '',
+    reward_cost int not null default 0,
+    reward_store text not null default '',
+    reward_tag text not null default '',
+    reward_barcode text not null default '',
+    claimed_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.claimed_rewards enable row level security;
+
+create policy "users_can_insert_own_claimed_rewards"
+on public.claimed_rewards
+for insert
+with check (auth.uid() = user_id);
+
+create policy "users_can_read_own_claimed_rewards"
+on public.claimed_rewards
+for select
+using (auth.uid() = user_id);
+
+create index if not exists claimed_rewards_user_id_claimed_at_idx
+    on public.claimed_rewards (user_id, claimed_at desc);
+
+create or replace function public.redeem_reward(
+    reward_id text,
+    reward_brand text,
+    reward_title text,
+    reward_cost int,
+    reward_store text,
+    reward_tag text,
+    reward_barcode text
+)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    current_balance int;
+    new_balance int;
+begin
+    if auth.uid() is null then
+        raise exception 'not authenticated';
+    end if;
+    if reward_cost < 0 then
+        raise exception 'invalid reward cost';
+    end if;
+
+    select seabucks into current_balance
+    from public.profiles
+    where id = auth.uid()
+    for update;
+
+    if current_balance is null then
+        raise exception 'profile not found';
+    end if;
+    if current_balance < reward_cost then
+        raise exception 'insufficient balance';
+    end if;
+
+    update public.profiles
+    set seabucks = seabucks - reward_cost
+    where id = auth.uid()
+    returning seabucks into new_balance;
+
+    insert into public.claimed_rewards (
+        user_id, reward_id, reward_brand, reward_title,
+        reward_cost, reward_store, reward_tag, reward_barcode
+    ) values (
+        auth.uid(), reward_id, reward_brand, reward_title,
+        reward_cost, reward_store, reward_tag, reward_barcode
+    );
+
+    return new_balance;
+end;
+$$;
+
+grant execute on function public.redeem_reward(text, text, text, int, text, text, text) to authenticated;

@@ -24,6 +24,7 @@
 		52A868E6904E8761F94F516C /* SwapSuggestionClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99EFC430A3D07B53FE527143 /* SwapSuggestionClient.swift */; };
 		535AE7DB8C7AB445C69F6203 /* ReceiptScanClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C153FAB165D719B0FF932BC /* ReceiptScanClient.swift */; };
 		C1A2B3D4E5F60718293A4B5C /* ScanSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C71829304152A3 /* ScanSyncService.swift */; };
+		E3F4A5B6C7D80819304152B4 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A6B7C8D9E01920304152C5 /* SessionStore.swift */; };
 		56BF9DAC1466C31565A41531 /* RewardsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5CF6325A26CF5E3559472CA /* RewardsView.swift */; };
 		59125EC7D0CFF82BC5ABF5BA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84ED1B4A021703479E5F0D48 /* HomeView.swift */; };
 		605921865CD02DB001DDBC73 /* FrameSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5018CF7745C1E2CFE72C48B /* FrameSampler.swift */; };
@@ -70,6 +71,7 @@
 		4B5DD5D8B8F1225A12D50F0E /* ScanClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanClassifier.swift; sourceTree = "<group>"; };
 		4C153FAB165D719B0FF932BC /* ReceiptScanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptScanClient.swift; sourceTree = "<group>"; };
 		D2E3F4A5B6C71829304152A3 /* ScanSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSyncService.swift; sourceTree = "<group>"; };
+		F5A6B7C8D9E01920304152C5 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		4E3FF0D4074B43898B222EB6 /* FoodItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItem.swift; sourceTree = "<group>"; };
 		515696807BF9FB8870393175 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		532B4790A59400372AA98278 /* LabelScanClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelScanClient.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 				4C153FAB165D719B0FF932BC /* ReceiptScanClient.swift */,
 				8DFAEEE4BEB772C77A67EAA2 /* ScanHistoryStore.swift */,
 				D2E3F4A5B6C71829304152A3 /* ScanSyncService.swift */,
+				F5A6B7C8D9E01920304152C5 /* SessionStore.swift */,
 				515696807BF9FB8870393175 /* SupabaseClient.swift */,
 				99EFC430A3D07B53FE527143 /* SwapSuggestionClient.swift */,
 			);
@@ -388,6 +391,7 @@
 				2316C3BFC568A24BA5854161 /* ScanHistoryView.swift in Sources */,
 				AA7697BE144766A3E282E93F /* ScanResultView.swift in Sources */,
 				C1A2B3D4E5F60718293A4B5C /* ScanSyncService.swift in Sources */,
+				E3F4A5B6C7D80819304152B4 /* SessionStore.swift in Sources */,
 				CFC407BD686E42EFCDEB3CD9 /* ScanView.swift in Sources */,
 				710586C15F2AE314BEC94466 /* ScoreDial.swift in Sources */,
 				E71692BE7550454E00CBB64A /* SignInView.swift in Sources */,

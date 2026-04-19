@@ -39,19 +39,59 @@ final class SupabaseClient: @unchecked Sendable {
     }
 
     // Reads the signed-in user's row from public.profiles. RLS scopes the
-    // query to auth.uid(), so the explicit id filter is defensive only.
+    // result to auth.uid(), so the only row that comes back is the caller's.
     func fetchCurrentUserProfile() async throws -> DatabricksProfile {
-        let rows: [DatabricksProfile] = try await get(
-            "rest/v1/profiles",
-            query: [URLQueryItem(
-                name: "select",
-                value: "id,display_name,username,email,seabucks,created_at"
-            )]
-        )
+        let rows: [DatabricksProfile] = try await get("rest/v1/profiles")
         guard let first = rows.first else {
-            throw SupabaseError.http(status: 404, body: "profile not found")
+            throw SupabaseError.http(status: 404, body: "profile not found — RLS may be blocking, or row missing")
         }
         return first
+    }
+
+    struct ClaimedRewardRow: Decodable {
+        let rewardId: String
+        let rewardBrand: String
+        let rewardTitle: String
+        let rewardCost: Int
+        let rewardStore: String
+        let rewardTag: String
+        let rewardBarcode: String
+        let claimedAt: String
+    }
+
+    func fetchClaimedRewards() async throws -> [ClaimedRewardRow] {
+        try await get("rest/v1/claimed_rewards", query: [
+            URLQueryItem(name: "order", value: "claimed_at.desc")
+        ])
+    }
+
+    private struct RedeemBody: Encodable {
+        let rewardId: String
+        let rewardBrand: String
+        let rewardTitle: String
+        let rewardCost: Int
+        let rewardStore: String
+        let rewardTag: String
+        let rewardBarcode: String
+    }
+
+    // Calls the redeem_reward RPC which atomically checks the balance,
+    // deducts the cost, writes a claimed_rewards row, and returns the new
+    // seabucks balance. Throws if the user has insufficient funds.
+    func redeemReward(_ reward: Reward) async throws -> Int {
+        let rewardID = reward.barcode.isEmpty
+            ? "\(reward.brand)|\(reward.title)"
+            : reward.barcode
+        let body = RedeemBody(
+            rewardId: rewardID,
+            rewardBrand: reward.brand,
+            rewardTitle: reward.title,
+            rewardCost: reward.cost,
+            rewardStore: reward.store,
+            rewardTag: reward.tag,
+            rewardBarcode: reward.barcode
+        )
+        return try await postReturning("rest/v1/rpc/redeem_reward", body: body)
     }
 
     // MARK: - Low-level REST
