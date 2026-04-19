@@ -81,6 +81,24 @@ enum LabelScanClient {
         let raw_label_text: String?
     }
 
+    // Claude sometimes wraps JSON in ```json ... ``` even when told not to.
+    // Swift's split(separator:) drops empty subsequences by default, so the
+    // earlier naive approach left backticks in place when fences were the only
+    // separator. This strips them directly without splitting.
+    private static func stripCodeFences(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard s.hasPrefix("```") else { return s }
+        // Drop opening fence — either "```json\n" or "```\n" or just "```".
+        if let firstNewline = s.firstIndex(of: "\n") {
+            s = String(s[s.index(after: firstNewline)...])
+        } else {
+            s = String(s.dropFirst(3))
+            if s.lowercased().hasPrefix("json") { s = String(s.dropFirst(4)) }
+        }
+        if s.hasSuffix("```") { s = String(s.dropLast(3)) }
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     static func scan(jpegData: Data) async throws -> FoodItem {
         ScanLog.llm(1, "label scan: JPEG bytes=\(jpegData.count) (barcode path skipped)")
         guard let key = apiKey else {
@@ -127,6 +145,8 @@ enum LabelScanClient {
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
         ScanLog.llm(3, "Anthropic response status=\(statusCode) bytes=\(data.count)")
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            let bodySnippet = String(data: data.prefix(500), encoding: .utf8) ?? "<non-utf8>"
+            ScanLog.llm(3, "Anthropic error body: \(bodySnippet)")
             throw LabelError.network(http.statusCode)
         }
 
@@ -138,15 +158,7 @@ enum LabelScanClient {
         ScanLog.llm(4, "LLM text block: \(raw.count) chars")
 
         // Strip markdown fences the same way the Python does.
-        var json = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if json.hasPrefix("```") {
-            let fenced = json.split(separator: "```").map(String.init)
-            if fenced.count >= 2 {
-                var inner = fenced[1]
-                if inner.lowercased().hasPrefix("json") { inner = String(inner.dropFirst(4)) }
-                json = inner.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
+        let json = stripCodeFences(raw)
 
         guard let jsonData = json.data(using: .utf8) else {
             ScanLog.llm(5, "failed to convert stripped text to UTF-8 JSON")
@@ -207,11 +219,32 @@ enum LabelScanClient {
             "text": "Estimate environmental impact for this food product: \"\(productName)\"\n\n\(envEstimatePrompt)"
         ]
         var content: [[String: Any]] = []
-        if let imageURL, let _ = URL(string: imageURL) {
-            content.append([
-                "type": "image",
-                "source": ["type": "url", "url": imageURL]
-            ])
+        // Download the OFF image ourselves and send as base64. Passing the URL
+        // directly makes Anthropic's fetcher download it, and images.openfoodfacts.org
+        // is slow enough that that path 400s with "timed out while trying to
+        // download the file" — observed in production.
+        if let imageURL, let url = URL(string: imageURL) {
+            do {
+                var imgReq = URLRequest(url: url)
+                imgReq.timeoutInterval = 8
+                let (imgData, imgResp) = try await URLSession.shared.data(for: imgReq)
+                let imgStatus = (imgResp as? HTTPURLResponse)?.statusCode ?? -1
+                ScanLog.llm(7, "fetched OFF image: status=\(imgStatus) bytes=\(imgData.count)")
+                if imgStatus == 200, !imgData.isEmpty {
+                    content.append([
+                        "type": "image",
+                        "source": [
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": imgData.base64EncodedString()
+                        ]
+                    ])
+                } else {
+                    ScanLog.llm(7, "OFF image fetch non-200 — proceeding text-only")
+                }
+            } catch {
+                ScanLog.llm(7, "OFF image fetch FAILED (\(error)) — proceeding text-only")
+            }
         }
         content.append(textBlock)
 
@@ -235,6 +268,8 @@ enum LabelScanClient {
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
         ScanLog.llm(8, "Anthropic response status=\(statusCode) bytes=\(data.count)")
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            let bodySnippet = String(data: data.prefix(500), encoding: .utf8) ?? "<non-utf8>"
+            ScanLog.llm(8, "Anthropic error body: \(bodySnippet)")
             throw LabelError.network(http.statusCode)
         }
 
@@ -242,15 +277,8 @@ enum LabelScanClient {
         guard let raw = decoded.content.first(where: { $0.type == "text" })?.text, !raw.isEmpty else {
             throw LabelError.empty
         }
-        var json = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if json.hasPrefix("```") {
-            let fenced = json.split(separator: "```").map(String.init)
-            if fenced.count >= 2 {
-                var inner = fenced[1]
-                if inner.lowercased().hasPrefix("json") { inner = String(inner.dropFirst(4)) }
-                json = inner.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
+        let json = stripCodeFences(raw)
+        ScanLog.llm(9, "LLM raw text (\(raw.count) chars) → stripped (\(json.count) chars): \(json.prefix(200))")
         guard let jsonData = json.data(using: .utf8) else { throw LabelError.decoding }
         let parsed = try JSONDecoder().decode(EnvEstimateJSON.self, from: jsonData)
 
