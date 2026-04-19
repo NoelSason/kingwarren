@@ -39,7 +39,7 @@ struct HomeView: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(hex: 0xF0EFE9))
+                    .fill(Color.fill1)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.black.opacity(0.04), lineWidth: 1)

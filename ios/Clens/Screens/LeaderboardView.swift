@@ -65,7 +65,7 @@ struct LeaderboardView: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(hex: 0xF0EFE9))
+                .fill(Color.fill1)
         )
     }
 
@@ -195,7 +195,7 @@ private struct RankPerk: View {
         HStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(earned ? Color.kelp : Color(hex: 0xF0EFE9))
+                    .fill(earned ? Color.kelp : Color.fill1)
                 if earned {
                     IconCheck(size: 16).foregroundStyle(.white)
                 } else {

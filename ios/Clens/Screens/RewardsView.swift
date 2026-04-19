@@ -71,7 +71,7 @@ struct RewardsView: View {
         }
         .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.ink)
+            RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.ocean)
         )
     }
 
@@ -80,9 +80,10 @@ struct RewardsView: View {
             Text(r.brand.uppercased())
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(1.5)
-                .foregroundStyle(Color(hex: 0x6B5410))
+                .foregroundStyle(Color.ink2)
             Text(r.title)
                 .font(.serif(26))
+                .foregroundStyle(Color.ink)
                 .padding(.top, 4)
                 .lineSpacing(2)
             Text("Regenerative ocean farming. Mussel beds filter water and sequester carbon.")
@@ -97,7 +98,7 @@ struct RewardsView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 18)
                         .frame(height: 38)
-                        .background(Capsule().fill(Color.ink))
+                        .background(Capsule().fill(Color.ocean))
                 }
                 .buttonStyle(.plain)
                 Text(r.tag)
@@ -110,10 +111,11 @@ struct RewardsView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [Color(hex: 0xF1EBDE), Color(hex: 0xE3D4A8)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.hair, lineWidth: 1)
+                )
         )
     }
 
@@ -131,7 +133,7 @@ struct RewardsView: View {
         return HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(hex: 0xF0EFE9))
+                    .fill(Color.fill1)
                 Text(initials.uppercased())
                     .font(.system(size: 11, weight: .bold))
                     .tracking(0.5)
@@ -157,11 +159,11 @@ struct RewardsView: View {
             Button {} label: {
                 Text(r.cost.formatted())
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(canAfford ? .white : Color.ink3)
+                    .foregroundStyle(canAfford ? .white : Color.ink2)
                     .padding(.horizontal, 12)
                     .frame(height: 32)
                     .background(
-                        Capsule().fill(canAfford ? Color.ink : Color(hex: 0xF0EFE9))
+                        Capsule().fill(canAfford ? Color.ocean : Color.fill1)
                     )
             }
             .buttonStyle(.plain)

@@ -247,7 +247,7 @@ private struct MenuRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(hex: 0xF0EFE9))
+                        .fill(Color.fill1)
                     icon.foregroundStyle(Color.ink2)
                 }
                 .frame(width: 32, height: 32)

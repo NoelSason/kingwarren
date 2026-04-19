@@ -19,6 +19,7 @@ struct SignInView: View {
             VStack(spacing: 0) {
                 Text("Clens")
                     .font(.serif(56))
+                    .foregroundStyle(Color.ink)
                     .padding(.top, 70)
                 Text("OCEAN SCORE · SEA BUCKS")
                     .font(.system(size: 12))
@@ -31,17 +32,17 @@ struct SignInView: View {
                     modeButton("Sign In", selected: mode == .signIn) { mode = .signIn; errorMessage = nil }
                     modeButton("Sign Up", selected: mode == .signUp) { mode = .signUp; errorMessage = nil }
                 }
-                .background(Color.black.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.fill1, in: RoundedRectangle(cornerRadius: 10))
                 .padding(.top, 40)
 
                 // Error banner
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color(hex: 0x9b1c1c))
+                        .foregroundStyle(Color.bad)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(hex: 0xfdecec), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.bad.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
                         .padding(.top, 20)
                 }
 
@@ -62,7 +63,7 @@ struct SignInView: View {
 
                 Button(action: submit) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10).fill(Color.ink)
+                        RoundedRectangle(cornerRadius: 10).fill(Color.ocean)
                         if isLoading {
                             ProgressView().tint(.white)
                         } else {
@@ -149,7 +150,7 @@ struct SignInView: View {
                 .foregroundStyle(selected ? Color.ink : Color.ink3)
                 .frame(maxWidth: .infinity)
                 .frame(height: 38)
-                .background(selected ? Color.white : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                .background(selected ? Color.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                 .padding(3)
         }
     }
@@ -191,8 +192,8 @@ private extension View {
             .frame(height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.12), lineWidth: 1))
+                    .fill(Color.surface)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.hair, lineWidth: 1))
             )
     }
 }

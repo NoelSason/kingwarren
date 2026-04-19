@@ -272,7 +272,7 @@ struct Facet: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(hex: 0xF0EFE9))
+                        .fill(Color.fill1)
                         .frame(width: 36, height: 36)
                     icon
                         .foregroundStyle(Color.ink2)
@@ -284,7 +284,7 @@ struct Facet: View {
                 Spacer()
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(hex: 0xF0EFE9))
+                        .fill(Color.fill1)
                         .frame(width: 96, height: 6)
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Score.color(value))

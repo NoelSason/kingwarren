@@ -53,7 +53,7 @@ struct TabBarView: View {
             VStack(spacing: 4) {
                 ZStack {
                     Circle()
-                        .fill(Color.ink)
+                        .fill(Color.ocean)
                         .frame(width: 52, height: 52)
                         .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 6)
                     IconScan(size: 22)
