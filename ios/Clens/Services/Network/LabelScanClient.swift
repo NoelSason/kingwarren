@@ -18,11 +18,12 @@ enum LabelScanClient {
     }
 
     // Cell 8 llm_estimate() output — used when OFF returns a product but
-    // Agribalyse lifecycle data is missing.
+    // Agribalyse lifecycle data / packagings data is missing.
     struct EnvEstimate {
         let co2TotalKg: Double
         let efTotal: Double
-        let hasPlasticPackaging: Bool
+        let plasticScore: Double     // 0.0 (heavy non-recyclable plastic) → 1.0 (no plastic)
+        let waterLitersPerKg: Int
         let estimatedEcoscore: Int?
     }
 
@@ -187,23 +188,25 @@ enum LabelScanClient {
     }
 
     // Cell 8 llm_estimate() from project_oceanscore.py — used when OFF returns
-    // a product but Agribalyse lifecycle data is missing. Claude estimates
-    // co2_total_kg, ef_total, has_plastic_packaging from the product name
-    // (and front image URL if OFF has one).
+    // a product but Agribalyse lifecycle data or packagings info is missing.
+    // Claude estimates co2_total_kg, ef_total, plastic_score (0-1), and
+    // water_l_per_kg from the product name (and front image URL if available).
     private static let envEstimatePrompt = """
     Return ONLY a JSON object, no markdown, no code fences, no commentary:
     {
-      "co2_total_kg": <float, kg CO2-eq per kg product, typical 0.5-50>,
-      "ef_total": <float, environmental footprint score 0.0-1.5, includes eutrophication>,
-      "has_plastic_packaging": <true/false>,
-      "estimated_ecoscore": <int 0-100, environmental friendliness, 100=best>
+      "co2_total_kg": <float, kg CO2-eq per kg, typical 0.5-50>,
+      "ef_total": <float, environmental footprint 0.0-1.5, includes eutrophication>,
+      "plastic_score": <float 0.0-1.0, where 0=heavy non-recyclable plastic, 1.0=no plastic>,
+      "water_l_per_kg": <int, liters of freshwater per kg, typical 100-15000>,
+      "estimated_ecoscore": <int 0-100, 100=best>
     }
     """
 
     private struct EnvEstimateJSON: Decodable {
         let co2_total_kg: Double?
         let ef_total: Double?
-        let has_plastic_packaging: Bool?
+        let plastic_score: Double?
+        let water_l_per_kg: Int?
         let estimated_ecoscore: Int?
     }
 
@@ -285,12 +288,13 @@ enum LabelScanClient {
         let est = EnvEstimate(
             co2TotalKg: parsed.co2_total_kg ?? 5.0,
             efTotal: parsed.ef_total ?? 0.5,
-            hasPlasticPackaging: parsed.has_plastic_packaging ?? false,
+            plasticScore: max(0.0, min(1.0, parsed.plastic_score ?? 0.5)),
+            waterLitersPerKg: parsed.water_l_per_kg ?? 2000,
             estimatedEcoscore: parsed.estimated_ecoscore
         )
-        ScanLog.llm(9, String(format: "estimate parsed: co2=%.2f ef=%.2f plastic=%@ ecoscore=%@",
+        ScanLog.llm(9, String(format: "estimate parsed: co2=%.2f ef=%.2f plastic_score=%.2f water_L=%d ecoscore=%@",
                               est.co2TotalKg, est.efTotal,
-                              est.hasPlasticPackaging ? "true" : "false",
+                              est.plasticScore, est.waterLitersPerKg,
                               est.estimatedEcoscore.map { "\($0)" } ?? "nil"))
         return est
     }

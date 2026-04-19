@@ -31,6 +31,7 @@ enum OpenFoodFactsClient {
 
     struct OFFPackaging: Decodable {
         let material: String?
+        let non_recyclable_and_non_biodegradable: String?
     }
 
     struct OFFEcoscoreData: Decodable {
@@ -103,16 +104,27 @@ enum OpenFoodFactsClient {
         return .unknown
     }
 
-    // Cell 8 plastic detection: any packaging component whose material mentions
-    // "plastic" or "pet" marks the product as plastic-packaged.
-    private static func hasPlastic(packagings: [OFFPackaging]?, tags: [String]) -> Bool {
-        if let pkgs = packagings {
-            for p in pkgs {
-                let m = (p.material ?? "").lowercased()
-                if m.contains("plastic") || m.contains("pet") { return true }
+    // New Cell 8 score_real() plastic gradient. Per packaging entry:
+    //   weight 1.0 if material is plastic AND non-recyclable-and-non-biodegradable
+    //   weight 0.5 if material contains "plastic" or "pet"
+    //   weight 0.0 otherwise
+    // plastic_score = max(0, 1 - sum(weights) / count). Returns nil when there
+    // are no packagings — caller will fall through to the LLM's plastic_score.
+    private static func plasticScore(packagings: [OFFPackaging]?) -> Double? {
+        guard let pkgs = packagings, !pkgs.isEmpty else { return nil }
+        var total = 0.0
+        for pk in pkgs {
+            let m = (pk.material ?? "").lowercased()
+            let containsPlastic = m.contains("plastic")
+            let containsPET = m.contains("pet")
+            let flaggedNonRecyclable = (pk.non_recyclable_and_non_biodegradable ?? "").lowercased() == "yes"
+            if containsPlastic && flaggedNonRecyclable {
+                total += 1.0
+            } else if containsPlastic || containsPET {
+                total += 0.5
             }
         }
-        return tags.map { $0.lowercased() }.contains(where: { $0.contains("plastic") || $0.contains("pet") })
+        return max(0.0, 1.0 - total / Double(pkgs.count))
     }
 
     private static func isOrganic(labels: [String]) -> Bool {
@@ -165,8 +177,8 @@ enum OpenFoodFactsClient {
         let cat = category(for: product.categories_tags ?? [])
         ScanLog.step(6, "classified category=\(cat.rawValue)")
         let pkg = packaging(for: product.packaging_tags ?? [])
-        let plastic = hasPlastic(packagings: product.packagings, tags: product.packaging_tags ?? [])
-        ScanLog.step(7, "classified packaging=\(pkg.rawValue) plastic-detected=\(plastic)")
+        let plasticScoreValue = plasticScore(packagings: product.packagings)
+        ScanLog.step(7, "classified packaging=\(pkg.rawValue) plastic_score=\(plasticScoreValue.map { String(format: "%.2f", $0) } ?? "nil (no packagings)")")
         let organic = isOrganic(labels: product.labels_tags ?? [])
         let co2Kg = product.ecoscore_data?.agribalyse?.co2_total
         let ef = product.ecoscore_data?.agribalyse?.ef_total
@@ -196,7 +208,7 @@ enum OpenFoodFactsClient {
         )
         item.agribalyseCO2Kg = co2Kg
         item.agribalyseEF = ef
-        item.hasPlasticPackaging = plastic
+        item.plasticScore = plasticScoreValue
         item.imageFrontURL = product.image_front_url
         cache[barcode] = item
         return item

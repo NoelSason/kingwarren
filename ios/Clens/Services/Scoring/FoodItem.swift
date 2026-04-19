@@ -28,7 +28,13 @@ struct FoodItem: Codable, Hashable {
     // present they override the category-baseline scoring.
     var agribalyseCO2Kg: Double?       // kg CO2-eq per kg product
     var agribalyseEF: Double?          // environmental footprint, typically 0-1.5
-    var hasPlasticPackaging: Bool?     // detected from packagings[].material
+    // 0-1 gradient (higher = better = less plastic burden). Computed from
+    // OFF packagings[] when available, else filled from the LLM's plastic_score.
+    var plasticScore: Double?
+    // 0-1 water score (higher = better). The no-LLM path uses a neutral 0.5;
+    // the LLM path uses 1 - min(water_l/15000, 1).
+    var waterScore: Double?
+    var waterLitersPerKg: Int?         // display passthrough from LLM / default
 
     // Optional provenance
     var rawLabelText: String
@@ -52,7 +58,9 @@ struct FoodItem: Codable, Hashable {
             plasticImpact: base.plastic,
             agribalyseCO2Kg: nil,
             agribalyseEF: nil,
-            hasPlasticPackaging: nil,
+            plasticScore: nil,
+            waterScore: nil,
+            waterLitersPerKg: nil,
             rawLabelText: "",
             barcode: barcode,
             sourceOrigin: nil,

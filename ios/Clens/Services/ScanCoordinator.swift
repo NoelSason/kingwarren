@@ -44,20 +44,30 @@ final class ScanCoordinator: ObservableObject {
         do {
             var item = try await OpenFoodFactsClient.fetchFoodItem(barcode: barcode)
             ScanLog.step(10, "FoodItem built: name='\(item.normalizedName)' brand='\(item.brand)' category=\(item.category.rawValue) organic=\(item.isOrganic) packaging=\(item.packagingType.rawValue)")
-            if let co2 = item.agribalyseCO2Kg, let ef = item.agribalyseEF {
-                ScanLog.step(11, "agribalyse carried through: co2=\(String(format: "%.2f", co2))kg/kg ef=\(String(format: "%.2f", ef)) plastic=\(item.hasPlasticPackaging ?? false)")
+
+            // Python Cell 8 skip-LLM rule: only the agribalyse + OFF-packagings
+            // path avoids the LLM call. Water stays neutral (0.5) in that case.
+            let hasCO2 = item.agribalyseCO2Kg != nil
+            let hasPlastic = item.plasticScore != nil
+            if hasCO2 && hasPlastic {
+                item.waterLitersPerKg = 2000
+                item.waterScore = 0.5
+                ScanLog.step(11, "agribalyse+packagings complete — skipping LLM, water neutral (0.5)")
             } else if LabelScanClient.isConfigured {
-                ScanLog.step(11, "no agribalyse data — calling LLM estimate (Cell 8 fallback)")
+                ScanLog.step(11, "missing \(hasCO2 ? "" : "co2/ef ")\(hasPlastic ? "" : "plastic_score ")— calling LLM estimate")
                 status = .busy("Estimating impact…")
                 do {
                     let est = try await LabelScanClient.estimateEnvironmental(
                         productName: item.normalizedName,
                         imageURL: item.imageFrontURL
                     )
-                    item.agribalyseCO2Kg = est.co2TotalKg
-                    item.agribalyseEF = est.efTotal
-                    item.hasPlasticPackaging = (item.hasPlasticPackaging ?? false) || est.hasPlasticPackaging
-                    ScanLog.step(11, "LLM estimate applied → will score via agribalyse branch")
+                    if item.agribalyseCO2Kg == nil { item.agribalyseCO2Kg = est.co2TotalKg }
+                    if item.agribalyseEF == nil { item.agribalyseEF = est.efTotal }
+                    if item.plasticScore == nil { item.plasticScore = est.plasticScore }
+                    item.waterLitersPerKg = est.waterLitersPerKg
+                    item.waterScore = 1.0 - min(Double(est.waterLitersPerKg) / 15000.0, 1.0)
+                    ScanLog.step(11, String(format: "LLM estimate applied: plastic_score=%.2f water_L=%d water_score=%.2f",
+                                            item.plasticScore ?? 0.5, item.waterLitersPerKg ?? 0, item.waterScore ?? 0.5))
                 } catch {
                     ScanLog.step(11, "LLM estimate FAILED (\(error)) — falling back to category baseline")
                 }

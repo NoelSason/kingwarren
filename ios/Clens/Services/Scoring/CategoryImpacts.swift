@@ -26,22 +26,48 @@ enum CategoryImpacts {
         .unknown:        Triplet(climate: 50, runoff: 50, plastic: 50)
     ]
 
-    // Coarse water-use priors (liters per kg equivalent). Shaun's IMPACTS table
-    // in project_oceanscore.py includes these; we keep them for UI display only.
-    static let waterLitersPerKg: [FoodCategory: Int] = [
-        .beef: 15400,
-        .poultry: 4300,
-        .dairy: 1020,
-        .seafood: 3700,
-        .legumes: 4055,
-        .vegetables: 322,
-        .fruit: 962,
-        .grains: 1800,
-        .packagedSnacks: 2000,
-        .beverages: 600,
-        .household: 1500,
-        .unknown: 2000
+    // Mirrors the IMPACTS dict in project_oceanscore.py Cell 6 (plus pork/eggs/
+    // grain/nuts added in Cell 8). co2 is kg CO2-eq per kg product, runoff and
+    // plastic are 0-1 factors, water is L per kg. Used by the Cell 6
+    // ocean_score() formula when Agribalyse data is unavailable.
+    struct ImpactFactors: Hashable {
+        var co2: Double
+        var runoff: Double
+        var plastic: Double
+        var water: Double
+    }
+
+    static let impactFactors: [FoodCategory: ImpactFactors] = [
+        .beef:           ImpactFactors(co2: 99.5, runoff: 0.95, plastic: 0.3, water: 15400),
+        .poultry:        ImpactFactors(co2: 9.9,  runoff: 0.55, plastic: 0.4, water: 4300),
+        .legumes:        ImpactFactors(co2: 0.9,  runoff: 0.15, plastic: 0.2, water: 4055),
+        .vegetables:     ImpactFactors(co2: 2.0,  runoff: 0.25, plastic: 0.4, water: 322),
+        .seafood:        ImpactFactors(co2: 13.6, runoff: 0.25, plastic: 0.6, water: 3700),
+        .dairy:          ImpactFactors(co2: 9.8,  runoff: 0.80, plastic: 0.5, water: 1020),
+        .fruit:          ImpactFactors(co2: 1.1,  runoff: 0.20, plastic: 0.4, water: 962),
+        .grains:         ImpactFactors(co2: 2.7,  runoff: 0.35, plastic: 0.3, water: 1600),
+        .packagedSnacks: ImpactFactors(co2: 5.0,  runoff: 0.40, plastic: 0.8, water: 2000),
+        .beverages:      ImpactFactors(co2: 5.0,  runoff: 0.40, plastic: 0.8, water: 2000),
+        .household:      ImpactFactors(co2: 5.0,  runoff: 0.40, plastic: 0.8, water: 2000)
+        // .unknown intentionally omitted — callers fall back to .vegetables
+        // to match Python's IMPACTS.get(category, IMPACTS["vegetable"]).
     ]
+
+    // WORST constants from Cell 6 — used to normalize each factor.
+    static let worstCO2: Double = 30
+    static let worstRunoff: Double = 0.6
+    static let worstPlastic: Double = 0.6
+    static let worstWater: Double = 5000
+
+    // Liters-per-kg lookup derived from impactFactors for UI display.
+    static var waterLitersPerKg: [FoodCategory: Int] {
+        var out: [FoodCategory: Int] = [:]
+        for (cat, f) in impactFactors {
+            out[cat] = Int(f.water)
+        }
+        out[.unknown] = Int(impactFactors[.vegetables]?.water ?? 2000)
+        return out
+    }
 
     // Modifier constants match Python file defaults.
     static let organicRunoffReduction: Int = 15
