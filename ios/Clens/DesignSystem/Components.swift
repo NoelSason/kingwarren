@@ -88,6 +88,21 @@ struct ProductThumb: View {
         }
     }
 
+    // Map pid → bundled asset name so hand-curated demo pics beat the
+    // striped placeholder when OFF has no image URL.
+    private var bundledAssetName: String? {
+        switch pid {
+        case "tofu":    return "Tofu"
+        case "lentils": return "Lentils"
+        default:        return nil
+        }
+    }
+
+    private var hasBundledAsset: Bool {
+        guard let name = bundledAssetName else { return false }
+        return UIImage(named: name) != nil
+    }
+
     var body: some View {
         Group {
             if let s = imageURL, let url = URL(string: s) {
@@ -104,6 +119,10 @@ struct ProductThumb: View {
                     }
                 }
                 .background(Color.white)
+            } else if let name = bundledAssetName, hasBundledAsset {
+                Image(name)
+                    .resizable()
+                    .scaledToFill()
             } else {
                 placeholder
             }

@@ -11,6 +11,7 @@
 		0982C5C5091F2032964B1BA9 /* SwapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00CA355780BE4AEFAE5B114 /* SwapView.swift */; };
 		1BD124983B854341F6E57D06 /* ReceiptClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = BF71E6D813C3996632814440 /* ReceiptClassifier.mlmodel */; };
 		1DA236C09A9BA635FAEBAEF9 /* env_regression.json in Resources */ = {isa = PBXBuildFile; fileRef = 2066FAF858BA99AD09020127 /* env_regression.json */; };
+		D5E6F7A8B9C01D2E3F4A5B6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E6F7A8B9C0D1E2F3A4B5C6D7 /* Assets.xcassets */; };
 		21895C0C952313288A495F9E /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9B3CF225F765FDACC78661 /* ScanCoordinator.swift */; };
 		2316C3BFC568A24BA5854161 /* ScanHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0B80FB355F3C229013668B /* ScanHistoryView.swift */; };
 		297CBD7721D8C39704F1FDCC /* CategoryImpacts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930E479523DAAAF3D799F363 /* CategoryImpacts.swift */; };
@@ -63,6 +64,7 @@
 		130257B74EA9800D4B7EC9B8 /* ReceiptResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptResultView.swift; sourceTree = "<group>"; };
 		138920295F2A52C4BC6DD3BE /* ReceiptPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptPreviewSheet.swift; sourceTree = "<group>"; };
 		2066FAF858BA99AD09020127 /* env_regression.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = env_regression.json; sourceTree = "<group>"; };
+		E6F7A8B9C0D1E2F3A4B5C6D7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		23A4EA82F9E717F8A9742BF9 /* OceanScoreEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OceanScoreEngine.swift; sourceTree = "<group>"; };
 		2D0E5474666F07DE93804B08 /* EnvRegressionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvRegressionModel.swift; sourceTree = "<group>"; };
 		3A1CB103D231CE045787B629 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 		80E90E3D23731CA9DE274368 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				E6F7A8B9C0D1E2F3A4B5C6D7 /* Assets.xcassets */,
 				108EFB22A631B13F1F683775 /* ML */,
 			);
 			path = Resources;
@@ -344,6 +347,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1DA236C09A9BA635FAEBAEF9 /* env_regression.json in Resources */,
+				D5E6F7A8B9C01D2E3F4A5B6C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

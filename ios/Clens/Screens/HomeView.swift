@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var router: AppRouter
     @EnvironmentObject var profileService: ProfileService
+    @EnvironmentObject var ocean: OceanStressService
     @State private var posts: [SocialPost] = SocialPost.sample
     @State private var showBonusInfo = false
 
@@ -11,7 +12,7 @@ struct HomeView: View {
     }
 
     private var oceanPlainLanguage: String {
-        let stress = Mock.oceanToday.stressIndex
+        let stress = ocean.stressIndex
         if stress >= 1.25 {
             return "Ocean conditions are stressed today — runoff-heavy picks (beef, dairy, processed) cost you more seabucks."
         }
@@ -122,10 +123,14 @@ struct HomeView: View {
             )
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("TODAY · CCE2 MOORING")
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(2)
-                    .foregroundStyle(.white.opacity(0.75))
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("TODAY · CCE2 MOORING")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.75))
+                    Spacer(minLength: 0)
+                    stressBadge
+                }
 
                 Text("Carbon + Ocean Combo")
                     .font(.serif(28))
@@ -142,6 +147,32 @@ struct HomeView: View {
         }
         .frame(height: 200)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    // Live stress readout — uses the value OceanScoreEngine actually scores
+    // against, so the number in the hero card matches the runoff multiplier
+    // applied to scans.
+    private var stressBadge: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(stressColor)
+                .frame(width: 6, height: 6)
+            Text("STRESS \(String(format: "%.2f", ocean.stressIndex))")
+                .font(.mono(10.5, weight: .semibold))
+                .tracking(1)
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(Color.white.opacity(0.12)))
+        .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
+    }
+
+    private var stressColor: Color {
+        let s = ocean.stressIndex
+        if s >= 1.25 { return Color(hex: 0xE06B4A) }
+        if s >= 1.10 { return Color(hex: 0xE6B548) }
+        return Color(hex: 0x7FCFA8)
     }
 
     // MARK: 2× bonus nudge pill
