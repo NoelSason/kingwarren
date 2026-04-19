@@ -8,3 +8,4 @@ __pycache__/
 # Per-developer secrets (API keys). Each dev creates their own.
 ios/Clens/Secrets.xcconfig
 Secrets.xcconfig
+project_oceanscore (4).py
