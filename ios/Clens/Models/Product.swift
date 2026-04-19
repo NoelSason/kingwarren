@@ -45,6 +45,22 @@ struct Receipt: Hashable {
     let items: [ReceiptItem]
     let earned: Int
     let averageScore: Int
+    // Populated a moment after items are scored by a second LLM call
+    // (SwapSuggestionClient). Empty on first publish; ReceiptResultView
+    // re-renders once the suggestions arrive.
+    var swaps: [ReceiptSwap] = []
+}
+
+struct ReceiptSwap: Identifiable, Hashable {
+    let id = UUID()
+    let fromName: String
+    let toName: String
+    let toCategoryLabel: String       // e.g. "Legume · Dry"
+    let fromScore: Int
+    let toScore: Int
+    let deltaScore: Int               // toScore - fromScore
+    let deltaPoints: Int              // displayPoints delta (sea bucks style)
+    let rationale: String
 }
 
 enum FeedItem: Identifiable, Hashable {

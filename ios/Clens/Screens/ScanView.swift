@@ -9,6 +9,11 @@ struct ScanView: View {
     @State private var processing: Bool = false
     @State private var lastHandledBarcode: String? = nil
 
+    // Pending receipt preview: when non-nil, ReceiptPreviewSheet is shown over
+    // the camera and the LLM call only fires after the user taps "Use Photo".
+    @State private var pendingReceiptJPEG: Data? = nil
+    @State private var pendingReceiptIsLikely: Bool = true
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -53,6 +58,23 @@ struct ScanView: View {
                     .padding(.bottom, 220)
                 bottomControls
                     .padding(.bottom, 54)
+            }
+
+            // Preview overlay: shown between capture and LLM send. User must
+            // confirm the photo before we spend an Anthropic request on it.
+            if let jpeg = pendingReceiptJPEG {
+                ReceiptPreviewSheet(
+                    imageData: jpeg,
+                    isLikelyReceipt: pendingReceiptIsLikely,
+                    onRetake: {
+                        pendingReceiptJPEG = nil
+                    },
+                    onUse: {
+                        pendingReceiptJPEG = nil
+                        Task { await coordinator.handleReceiptImage(jpeg) }
+                    }
+                )
+                .transition(.opacity)
             }
         }
         .ignoresSafeArea()
@@ -391,7 +413,12 @@ struct ScanView: View {
         defer { processing = false }
         do {
             let data = try await camera.capturePhoto()
-            await coordinator.handleReceiptImage(data)
+            // Snapshot the live classifier verdict at capture time. If the
+            // AutoRouteController is disabled (manual override) or the Core
+            // ML model isn't loaded, .detection stays .idle — treat that as
+            // "unknown, allow send" so we never hard-block the user.
+            pendingReceiptIsLikely = auto.detection != .barcode
+            pendingReceiptJPEG = data
         } catch {
             coordinator.status = .error("Couldn't capture photo.")
         }

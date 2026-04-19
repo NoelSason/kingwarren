@@ -197,13 +197,39 @@ final class ScanCoordinator: ObservableObject {
     // MARK: - Receipt flow
 
     func handleReceiptImage(_ jpeg: Data) async {
-        ScanLog.step(30, "handleReceiptImage: JPEG bytes=\(jpeg.count) → starting OCR")
+        ScanLog.step(30, "handleReceiptImage: JPEG bytes=\(jpeg.count) (LLM configured=\(ReceiptScanClient.isConfigured))")
+
+        // Primary path: single Claude vision call → per-item env priors → score
+        // via the same OceanScoreEngine the barcode flow uses. Falls through
+        // to local OCR if the key is missing or the call fails.
+        if ReceiptScanClient.isConfigured {
+            status = .busy("Identifying items…")
+            do {
+                let parsed = try await ReceiptScanClient.scan(jpegData: jpeg)
+                ScanLog.step(31, "LLM receipt parsed: store='\(parsed.store)' total=\(parsed.total) items=\(parsed.items.count)")
+                let receipt = buildReceipt(fromLLM: parsed)
+                ScanLog.step(33, "receipt built (LLM): items=\(receipt.items.count) earned=\(receipt.earned) avgScore=\(receipt.averageScore)")
+                self.liveReceipt = receipt
+                self.status = .idle
+                history?.log(.receipt(receipt))
+                // Fire the swap-suggestion LLM call in the background so the
+                // receipt renders immediately; we re-publish liveReceipt with
+                // swaps filled in once Claude responds.
+                Task { [weak self] in
+                    await self?.fetchSwaps(originals: parsed.items)
+                }
+                return
+            } catch {
+                ScanLog.step(30, "LLM receipt path FAILED (\(error)) — falling back to on-device OCR")
+            }
+        }
+
         status = .busy("Reading receipt…")
         do {
             let parsed = try await ReceiptOCRService.recognize(imageData: jpeg)
             ScanLog.step(31, "receipt OCR parsed: store='\(parsed.store)' total=\(parsed.total) lines=\(parsed.lines.count)")
             let receipt = buildReceipt(from: parsed)
-            ScanLog.step(33, "receipt built: items=\(receipt.items.count) earned=\(receipt.earned) avgScore=\(receipt.averageScore)")
+            ScanLog.step(33, "receipt built (OCR): items=\(receipt.items.count) earned=\(receipt.earned) avgScore=\(receipt.averageScore)")
             self.liveReceipt = receipt
             self.status = .idle
             history?.log(.receipt(receipt))
@@ -255,6 +281,192 @@ final class ScanCoordinator: ObservableObject {
             earned: totalEarned,
             averageScore: avgScore
         )
+    }
+
+    // LLM receipt path: each ParsedItem already carries per-SKU env priors
+    // (co2/ef/plastic/water), so we build the FoodItem from the category and
+    // then inline-apply those priors — matching the barcode+label flow so
+    // receipt and barcode scores stay comparable.
+    private func buildReceipt(fromLLM parsed: ReceiptScanClient.ParsedReceipt) -> Receipt {
+        let stress = ocean.stressIndex
+
+        var items: [ReceiptItem] = []
+        var totalEarned: Int = 0
+        var totalScore: Int = 0
+
+        for (idx, p) in parsed.items.enumerated() {
+            ScanLog.step(32, "LLM receipt line \(idx+1)/\(parsed.items.count): '\(p.rawText)' → '\(p.normalizedName)' category=\(p.category.rawValue) price=\(p.price)")
+            var item = OceanScoreEngine.foodItem(
+                name: p.normalizedName,
+                brand: "",
+                category: p.category,
+                barcode: nil,
+                isOrganic: p.isOrganic,
+                isLocal: p.isLocal,
+                packaging: p.packagingType,
+                classificationConfidence: p.classificationConfidence
+            )
+            // Same prior-merge policy as ScanCoordinator.applyEnvEstimate: only
+            // fill fields that are currently nil, never overwrite real data.
+            if item.agribalyseCO2Kg == nil, let v = p.co2TotalKg { item.agribalyseCO2Kg = v }
+            if item.agribalyseEF    == nil, let v = p.efTotal    { item.agribalyseEF    = v }
+            if item.plasticScore    == nil, let v = p.plasticScore { item.plasticScore = v }
+            if item.waterScore      == nil, let v = p.waterLitersPerKg {
+                item.waterLitersPerKg = v
+                item.waterScore = 1.0 - min(Double(v) / 15000.0, 1.0)
+            }
+
+            let scored = OceanScoreEngine.score(item, stressIndex: stress)
+            totalEarned += scored.displayPoints
+            totalScore += scored.score
+
+            let pid = slug(p.normalizedName)
+            parsedCache[pid] = OceanScoreEngine.uiProduct(from: item, stressIndex: stress)
+
+            let displayName = p.normalizedName.isEmpty
+                ? p.rawText
+                : p.normalizedName.prefix(1).uppercased() + p.normalizedName.dropFirst()
+            items.append(ReceiptItem(name: String(displayName), price: p.price, pid: pid))
+        }
+
+        let avgScore = items.isEmpty ? 0 : totalScore / items.count
+
+        return Receipt(
+            store: parsed.store,
+            date: parsed.dateText,
+            total: parsed.total,
+            items: items,
+            earned: totalEarned,
+            averageScore: avgScore
+        )
+    }
+
+    // Build + score a FoodItem from the same shape of label signals and env
+    // priors the LLM gives us, so receipt originals and LLM-proposed swaps
+    // run through identical scoring. Keeps deltaScore meaningful.
+    private func scoredFromPriors(
+        name: String,
+        category: FoodCategory,
+        isOrganic: Bool,
+        isLocal: Bool,
+        packaging: PackagingType,
+        classificationConfidence: Double,
+        co2: Double?,
+        ef: Double?,
+        plasticScore: Double?,
+        waterLitersPerKg: Int?
+    ) -> OceanScoreEngine.Scored {
+        var item = OceanScoreEngine.foodItem(
+            name: name,
+            brand: "",
+            category: category,
+            barcode: nil,
+            isOrganic: isOrganic,
+            isLocal: isLocal,
+            packaging: packaging,
+            classificationConfidence: classificationConfidence
+        )
+        if item.agribalyseCO2Kg == nil, let v = co2 { item.agribalyseCO2Kg = v }
+        if item.agribalyseEF    == nil, let v = ef  { item.agribalyseEF = v }
+        if item.plasticScore    == nil, let v = plasticScore { item.plasticScore = v }
+        if item.waterScore      == nil, let v = waterLitersPerKg {
+            item.waterLitersPerKg = v
+            item.waterScore = 1.0 - min(Double(v) / 15000.0, 1.0)
+        }
+        return OceanScoreEngine.score(item, stressIndex: ocean.stressIndex)
+    }
+
+    // Second LLM call: ask for two realistic swaps given what the user bought,
+    // score the proposed alternatives through OceanScoreEngine, and publish a
+    // fresh Receipt with the swaps filled in. No-op if the client isn't
+    // configured or fewer than two items were parsed.
+    private func fetchSwaps(originals: [ReceiptScanClient.ParsedItem]) async {
+        guard SwapSuggestionClient.isConfigured else {
+            ScanLog.llm(40, "SwapSuggestionClient not configured — skipping swap call")
+            return
+        }
+        guard originals.count >= 2 else {
+            ScanLog.llm(40, "fewer than 2 items parsed — skipping swap call")
+            return
+        }
+
+        var originalScores: [String: OceanScoreEngine.Scored] = [:]
+        var inputs: [SwapSuggestionClient.InputItem] = []
+        for p in originals {
+            let scored = scoredFromPriors(
+                name: p.normalizedName,
+                category: p.category,
+                isOrganic: p.isOrganic,
+                isLocal: p.isLocal,
+                packaging: p.packagingType,
+                classificationConfidence: p.classificationConfidence,
+                co2: p.co2TotalKg,
+                ef: p.efTotal,
+                plasticScore: p.plasticScore,
+                waterLitersPerKg: p.waterLitersPerKg
+            )
+            originalScores[p.rawText] = scored
+            inputs.append(SwapSuggestionClient.InputItem(
+                rawText: p.rawText,
+                normalizedName: p.normalizedName,
+                category: p.category,
+                score: scored.score
+            ))
+        }
+
+        do {
+            let suggestions = try await SwapSuggestionClient.suggest(items: inputs)
+            var swaps: [ReceiptSwap] = []
+            for s in suggestions {
+                guard let fromScored = originalScores[s.fromRawText] else {
+                    ScanLog.llm(46, "swap references unknown raw_text='\(s.fromRawText)' — dropping")
+                    continue
+                }
+                let toScored = scoredFromPriors(
+                    name: s.toNormalizedName,
+                    category: s.toCategory,
+                    isOrganic: s.toIsOrganic,
+                    isLocal: s.toIsLocal,
+                    packaging: s.toPackagingType,
+                    classificationConfidence: s.toCategory == .unknown ? 0.3 : 0.75,
+                    co2: s.toCo2TotalKg,
+                    ef: s.toEfTotal,
+                    plasticScore: s.toPlasticScore,
+                    waterLitersPerKg: s.toWaterLitersPerKg
+                )
+                let dPts = toScored.displayPoints - fromScored.displayPoints
+                let dScore = toScored.score - fromScored.score
+                // An LLM-proposed "swap" that doesn't actually earn more sea
+                // bucks isn't a useful suggestion — drop it instead of
+                // rendering a negative delta in the UI.
+                guard dPts > 0 else {
+                    ScanLog.llm(46, "dropping swap '\(s.fromNormalizedName)' → '\(s.toNormalizedName)' (delta_pts=\(dPts))")
+                    continue
+                }
+                swaps.append(ReceiptSwap(
+                    fromName: capitalizedFirst(s.fromNormalizedName),
+                    toName: capitalizedFirst(s.toNormalizedName),
+                    toCategoryLabel: s.toCategory.sectionLabel,
+                    fromScore: fromScored.score,
+                    toScore: toScored.score,
+                    deltaScore: dScore,
+                    deltaPoints: dPts,
+                    rationale: s.rationale
+                ))
+            }
+            ScanLog.llm(47, "swaps scored: \(swaps.count) → republish liveReceipt")
+            if var r = self.liveReceipt {
+                r.swaps = swaps
+                self.liveReceipt = r
+            }
+        } catch {
+            ScanLog.llm(46, "swap suggest FAILED: \(error)")
+        }
+    }
+
+    private func capitalizedFirst(_ s: String) -> String {
+        guard let first = s.first else { return s }
+        return first.uppercased() + s.dropFirst()
     }
 
     // In-memory store for products discovered during receipt OCR so

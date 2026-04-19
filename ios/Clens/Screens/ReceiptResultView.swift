@@ -22,8 +22,13 @@ struct ReceiptResultView: View {
                     SectionHeader(title: "Items & scores", trailing: "Tap any item")
                     itemsCard
 
-                    SectionHeader(title: "What if you swapped...", trailing: "+304 possible")
-                    swapsList
+                    if !receipt.swaps.isEmpty {
+                        SectionHeader(
+                            title: "What if you swapped...",
+                            trailing: swapsHeaderTrailing
+                        )
+                        swapsList
+                    }
 
                     Spacer().frame(height: 30)
                 }
@@ -177,54 +182,69 @@ struct ReceiptResultView: View {
 
     private var swapsList: some View {
         VStack(spacing: 8) {
-            SwapMini(pid: "beef")
-            SwapMini(pid: "monster")
+            ForEach(receipt.swaps) { swap in
+                SwapRow(swap: swap)
+            }
         }
         .padding(.horizontal, 16)
     }
+
+    private var swapsHeaderTrailing: String {
+        let total = receipt.swaps.map { max(0, $0.deltaPoints) }.reduce(0, +)
+        return "+\(total) sea bucks possible"
+    }
 }
 
-private struct SwapMini: View {
-    @EnvironmentObject var router: AppRouter
-    let pid: String
+private struct SwapRow: View {
+    let swap: ReceiptSwap
 
     var body: some View {
-        if let swap = Mock.swaps[pid],
-           let from = Mock.products[pid],
-           let to = Mock.products[swap.to] {
-            Button {
-                router.push(.swap(pid: pid))
-            } label: {
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        ProductThumb(pid: from.id, size: 40)
-                        IconSwap(size: 14).foregroundStyle(Color.ink3)
-                        ProductThumb(pid: to.id, size: 40)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("\(from.name) → \(to.name.split(separator: ",").first.map(String.init) ?? to.name)")
-                            .font(.system(size: 13, weight: .semibold))
-                            .multilineTextAlignment(.leading)
-                            .foregroundStyle(Color.ink)
-                            .lineSpacing(1)
-                        Text("+\(swap.deltaPoints) pts · +\(swap.deltaScore) score")
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .foregroundStyle(Color.kelp)
-                    }
-                    Spacer()
-                    IconChevR(size: 14).foregroundStyle(Color.ink3)
-                }
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.hair, lineWidth: 1)
-                        )
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                (
+                    Text(swap.fromName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.ink)
+                    + Text("  ⇄  ")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.ink3)
+                    + Text(swap.toName)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.ink)
                 )
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                Text(swap.rationale)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Color.ink3)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(deltaLabel)
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(deltaColor)
             }
-            .buttonStyle(.plain)
+            Spacer(minLength: 8)
         }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.hair, lineWidth: 1)
+                )
+        )
+    }
+
+    private var deltaLabel: String {
+        let pts = swap.deltaPoints
+        let score = swap.deltaScore
+        let ptsSign = pts >= 0 ? "+" : ""
+        let scoreSign = score >= 0 ? "+" : ""
+        return "\(ptsSign)\(pts) sea bucks · \(scoreSign)\(score) ocean score"
+    }
+
+    private var deltaColor: Color {
+        swap.deltaPoints >= 0 ? Color.kelp : Color.ink3
     }
 }

@@ -125,7 +125,7 @@ struct ScanResultView: View {
                     .font(.serif(22))
                     .foregroundStyle(color)
                 (Text("Earns ").font(.system(size: 12.5))
-                 + Text("\(Int(Double(p.score) * 1.6)) pts").font(.system(size: 12.5, weight: .bold))
+                 + Text("\(Int(Double(p.score) * 1.6)) sea bucks").font(.system(size: 12.5, weight: .bold))
                  + Text(" at checkout.").font(.system(size: 12.5)))
                     .foregroundStyle(Color.ink2)
                     .lineSpacing(2)
